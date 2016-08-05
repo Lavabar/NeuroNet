@@ -3,6 +3,6 @@
 
 #include "net_structs.h"
 double *netfpass(struct neuronet *net, double *data);
-//void netbpass(struct neuronet *net, double **out, double *target, double eta);
+int netbpass(struct neuronet *net, double *inp, double *out, double *target, double eta);
 
 #endif

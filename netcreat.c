@@ -53,26 +53,26 @@ struct neuronet *netcreat(int nl, int *nn, int ninp)
     for (i = 1; i < nl; i++) 
         res->nw[i] = res->nn[i - 1];
 
-	net->total_nw = 0;
+	res->total_nw = 0;
 	nperc = ninp;
 	for (i = 0; i < nl; i++) {
-		net->total_nw += nn[i] * nperc;
+		res->total_nw += nn[i] * nperc;
 		nperc = nn[i];
 	}
 
-	net->total_nn = 0;
-	for (i = 0; i < net->nl; i++)
-		net->total_nn += net->nn[i];	
+	res->total_nn = 0;
+	for (i = 0; i < nl; i++)
+		res->total_nn += nn[i];	
 
-	if((w = (double *)malloc(sizeof(double) * net->total_nw)) == NULL) {
+	if((w = (double *)malloc(sizeof(double) * res->total_nw)) == NULL) {
 		net_errno = NET_ENOMEM;
 		goto free_nw;
 	}
 	
-    for (i = 0; i < net->total_nw; i++)
+    for (i = 0; i < res->total_nw; i++)
 		*w++ = (double)rand()/(double)RAND_MAX * 2.0 - 1.0;
 
-	res->w = w - net->total_nw;
+	res->w = w - res->total_nw;
 
     return res;
 

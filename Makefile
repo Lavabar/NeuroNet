@@ -13,14 +13,20 @@ NETOBJS=$(NETSRCS:.c=.o)
 
 all: test_netcreat test_fpass
 
-test_fpass: $(NETOBJS) test_fpass.o test_netcreat.o
+test_fpass: $(NETOBJS) test_fpass.o
 	$(CC) $(CFLAGS) -o test_fpass test_fpass.o $(NETOBJS)
 
 test_netcreat: $(NETOBJS) test_netcreat.o
 	$(CC) $(CFLAGS) -o test_netcreat test_netcreat.o $(NETOBJS)
 
+test_fpass.o:test_fpass.c
+	$(CC) $(CFLAGS) -c test_fpass.c	
+
 test_netcreat.o:test_netcreat.c
 	$(CC) $(CFLAGS) -c test_netcreat.c	
+
+netpass.o: netpass.c
+	$(CC) $(CFLAGS) -c netpass.c
 
 netcreat.o: netcreat.c
 	$(CC) $(CFLAGS) -c netcreat.c
