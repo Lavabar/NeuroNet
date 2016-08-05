@@ -67,7 +67,7 @@ int netbpass(struct neuronet *net, double *inp, double *out, double *target, dou
 		if (i > 0) {
 			for (j = 0, m = 0; j < nn; j++) { 
 				for (k = 0; k < nw; k++, m++)
-					*(w - m) += eta * (*errors - j) * (*out - k);
+					*(w - m) += eta * *(errors - j) * *(out - k);
 			}
 		} else {
 			for (j = 0, m = 0; j < nn; j++) {
