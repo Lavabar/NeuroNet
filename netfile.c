@@ -4,7 +4,7 @@
 #include <string.h>
 #include "net_structs.h"
 
-void nettofile(struct neuronet *net, char *path)
+/*void nettofile(struct neuronet *net, char *path)
 {
 	int i, j;
 	FILE *f;
@@ -26,9 +26,37 @@ void nettofile(struct neuronet *net, char *path)
 			fprintf(f, "%lf\n", net->w[i][j]);
 	
 	fclose(f);
+}*/
+
+void nettofile(struct neuronet *net, char *path)
+{
+	int i, j;
+	FILE *f;
+	double *w = net->w;		 //for moving pointer
+	
+	if ((f = fopen(path, "w+")) == NULL) {
+		fprintf(stderr, "Can not open file %s: %s\n", path, strerror(errno));
+		return;
+	}
+	//f = stdout;
+	fprintf(f, "%d\n", net->nl);
+	for (i = 0; i < net->nl; i++)	
+		fprintf(f, "%d\n", *(net->nn + i));
+
+	for (i = 0; i < net->nl; i++)	
+		fprintf(f, "%d\n", *(net->nw + i));
+
+	fprintf(f, "%d\n", net->total_nn);
+	fprintf(f, "%d\n", net->total_nw);
+
+	for (i = 0; i < net->nl; i++)
+		for (j = 0; j < *(net->nn + i) * *(net->nw + i); j++)
+			fprintf(f, "%lf\n", *w++);
+	
+	fclose(f);
 }
 
-void netfromfile(struct neuronet *net, char *path)
+/*void netfromfile(struct neuronet *net, char *path)
 {
 	int i, j;
 	FILE *f;
@@ -56,6 +84,41 @@ void netfromfile(struct neuronet *net, char *path)
 		for (j = 0; j < net->nn[i] * net->nw[i]; j++)
 			fscanf(f, "%lf\n", &(net->w[i][j]));
 	}
+
+	fclose(f);
+}*/
+void netfromfile(struct neuronet *net, char *path)
+{
+	int i, j;
+	FILE *f;
+
+	if ((f = fopen(path, "r")) == NULL) {
+		fprintf(stderr, "Can not open file %s: %s\n", strerror(errno), path);
+		return;
+	}
+
+	fscanf(f, "%d\n", &(net->nl));
+	printf("nl = %d\n", net->nl);
+
+	net->nn = (int *)malloc(sizeof(int) * net->nl);
+	net->nw = (int *)malloc(sizeof(int) * net->nl);
+	
+	for (i = 0; i < net->nl; i++)
+		fscanf(f, "%d\n", net->nn + i);
+
+	for (i = 0; i < net->nl; i++)
+		fscanf(f, "%d\n", net->nw + i);
+	
+	fscanf(f, "%d\n", &(net->total_nn));
+	fscanf(f, "%d\n", &(net->total_nw));
+	
+	net->w = (double *)malloc(sizeof(double *) * net->total_nw);
+
+	for (i = 0; i < net->nl; i++)
+		for (j = 0; j < *(net->nn + i) * *(net->nw + i); j++)
+			fscanf(f, "%lf\n", net->w++);
+	
+	net->w -= net->total_nw;
 
 	fclose(f);
 }
