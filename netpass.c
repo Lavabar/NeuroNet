@@ -61,26 +61,14 @@ int netbpass(struct neuronet *net, double *inp, double *out, double *target, dou
 	for (i = nl - 1; i >= 0; i--) {
 		nn = net->nn[i];
 		nw = net->nw[i]; 
-		for (j = ne - 1; j >= 0; j--)
-			printf("%lf ", *(errors - j));
-		printf("\n");
 		if (i > 0) {
-			for (j = 0, m = 0; j < nn; j++) { 
+			for (j = 0, m = 0; j < nn; j++)  
 				for (k = 0; k < nw; k++, m++)
 					*(w - m) += eta * *(errors - j) * *(out - k);
-			}
 		} else {
-			for (j = 0, m = 0; j < nn; j++) {
-				for (k = 0; k < nw; k++, m++) {
-					double correction;
-					correction = eta * *(errors - j) * *(inp - k);
-					printf("correction=%lf\n", correction);
-					printf("(%lf %lf %lf %lf)\n", *(w - m), eta, *(errors - j), *(inp - k));
+			for (j = 0, m = 0; j < nn; j++)
+				for (k = 0; k < nw; k++, m++) 
 					*(w - m) += eta * *(errors - j) * *(inp - k);
-					printf("(%lf %lf %lf %lf)\n", *(w - m), eta, *(errors - j), *(inp - k));
-				}
-			}
-
 		}
 		if (i > 0) {
 			int newne;
@@ -98,7 +86,7 @@ int netbpass(struct neuronet *net, double *inp, double *out, double *target, dou
 				
 				*(newerrors - j) *= *out * (1.0 - *out);
 			}
-			free(errors);
+			free(errors - ne + 1);
 			errors = newerrors;
 			ne = newne;
 		}
