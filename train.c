@@ -19,7 +19,7 @@
 #define CNTNOTGUNS 18
 #define TOTAL (CNTGUNS + CNTNOTGUNS)
 #define SAMPLE_SIZE 100
-#define ETA 1.0
+#define ETA 0.01
 
 struct sample {
 	double *data;
@@ -28,17 +28,17 @@ struct sample {
 
 static void shufflearr(int *pathidx, int len)
 {
-	int p1;
-	for (p1 = 0; p1 < len; ++p1) {
-		int p2;
-		int tmp;
-		
-		p2 = rand() % len;
-		tmp = pathidx[p1];
+	int n1, n2, tmp;
 
-		pathidx[p1] = pathidx[p2];
-		pathidx[p2] = tmp;
-	}
+	n1 = rand() % (len);
+	n2 = rand() % (len);
+
+	while (n1 == n2) 
+		n2 = rand() % (len);
+ 
+	tmp = *(pathidx + n1);
+	*(pathidx + n1) = *(pathidx + n2);
+	*(pathidx + n2) = tmp;
 }
 
 int main(int argc, char** argv)
@@ -90,6 +90,10 @@ int main(int argc, char** argv)
 		*(idxes + i) = i;
 		ipl_freeimg(&img);
 	}
+
+	/*for(i = 0; i < TOTAL; i++)
+		printf("tar1 = %lf   tar2 = %lf\n", *((examples + i)->target), *((examples + i)->target + 1));
+	getchar();*/	
 	
 	if ((stat = netfromfile(net, NEURO_PATH)) == 1) {			// read net from file or create new
 		if ((net = netcreat(nl, nn, SAMPLE_SIZE)) == NULL) {
@@ -103,7 +107,7 @@ int main(int argc, char** argv)
 	
 	int isguncor, isgunincor;
 	int notguncor, notgunincor;
-	while(isguncor != CNTGUNS && notguncor != CNTNOTGUNS) {
+	while(isguncor != CNTGUNS || notguncor != CNTNOTGUNS) {
 		isguncor = isgunincor = notguncor = notgunincor = 0;
 		for (i = 0; i < TOTAL; i++) {
 			int idx;
@@ -115,14 +119,15 @@ int main(int argc, char** argv)
 			isnotgun_val = *(out + net->total_nn - 1);		
 
 
+			printf("idx = %d    tar1 = %lf   tar2 = %lf\n", idx,*((examples + idx)->target), *((examples + idx)->target + 1));
 			if (*((examples + idx)->target) == 1.0 && isgun_val >= isnotgun_val)
 				isguncor++;
 			else if (*((examples + idx)->target) == 1.0 && isgun_val < isnotgun_val)
-				isgunincor++;
+				notgunincor++;
 			else if (*((examples + idx)->target) == 0.0 && isnotgun_val >= isgun_val)
 				notguncor++;
 			else if (*((examples + idx)->target) == 0.0 && isnotgun_val < isgun_val)
-				notgunincor++;
+				isgunincor++;
 
 			netbpass(net, (examples + idx)->data, out, (examples + idx)->target, ETA);
 			/*w = net->w;
@@ -134,9 +139,9 @@ int main(int argc, char** argv)
 				}
 				printf("\n");
 			}*/
-			shufflearr(idxes, TOTAL);
 			
 		}
+		shufflearr(idxes, TOTAL);
 		printf("isguncor = %d isgunincor = %d    notguncor = %d  notgunincor = %d\n", isguncor, isgunincor, notguncor, notgunincor);
 		nettofile(net, NEURO_PATH);
 	}
