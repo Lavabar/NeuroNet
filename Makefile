@@ -11,7 +11,7 @@ NETOBJS=$(NETSRCS:.c=.o)
 #	$(CC) $(CFLAGS) -I/usr/include/libpng12 -lpng12 -o test3 test3.c $(SRCS)
 #	$(CC) $(CFLAGS) -I/usr/include/libpng12 -lpng12 -o testback testback.c $(SRCS)
 
-all: test_netcreat test_fpass test_netfile test_main train
+all: test_netcreat test_fpass test_netfile test_main train main
 
 test_fpass: $(NETOBJS) test_fpass.o
 	$(CC) $(CFLAGS) -o test_fpass test_fpass.o $(NETOBJS)
@@ -28,6 +28,9 @@ test_main: $(NETOBJS) test_main.o
 train: $(NETOBJS) train.o
 	$(CC) $(CFLAGS) -o train train.o $(NETOBJS)
 
+main: $(NETOBJS) main.o
+	$(CC) $(CFLAGS) -o main main.o $(NETOBJS)
+
 test_fpass.o:test_fpass.c
 	$(CC) $(CFLAGS) -c test_fpass.c	
 
@@ -42,6 +45,9 @@ test_main.o:test_main.c
 
 train.o:train.c
 	$(CC) $(CFLAGS) -c train.c
+
+main.o:main.c
+	$(CC) $((CFLAGS) -c main.c
 
 netpass.o: netpass.c
 	$(CC) $(CFLAGS) -c netpass.c
@@ -62,7 +68,7 @@ iplimage.o: iplimage.c
 	$(CC) $(CFLAGS) -c iplimage.c
 
 clean:
-	rm test_netcreat test_fpass test_netfile test_main train *.o
+	rm test_netcreat test_fpass test_netfile test_main train main *.o
 
 
 

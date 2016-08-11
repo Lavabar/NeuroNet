@@ -44,7 +44,7 @@ double *sobel(struct IplImage *frame, double thres)
   
 	for (y = 0; y < h; y++)
 		for (x = 0; x < w; x++)
-			res[y * w + x] = -1.0;
+			res[y * w + x] = 0.0;
   
 	for(y = 1; y < h - 1; y++){
 		for(x = 1; x < w - 1; x++) {

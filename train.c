@@ -15,8 +15,8 @@
 #define GUNS_PATH "/home/user/NeuroNet/guns"
 #define NOTGUNS_PATH "/home/user/NeuroNet/notguns"
 
-#define CNTGUNS 18
-#define CNTNOTGUNS 18
+#define CNTGUNS 23
+#define CNTNOTGUNS 22
 #define TOTAL (CNTGUNS + CNTNOTGUNS)
 #define SAMPLE_SIZE 100
 #define ETA 0.01
@@ -40,6 +40,26 @@ static void shufflearr(int *pathidx, int len)
 	*(pathidx + n1) = *(pathidx + n2);
 	*(pathidx + n2) = tmp;
 }
+
+static double *getdata(struct IplImage *img)
+{
+	int x, y;
+	double *data;
+	
+	data = (double *)malloc(sizeof(double) * img->width * img->height);
+	for (y = 0; y < img->height; y++)
+		for (x = 0; x < img->width; x++) {
+			unsigned char r, g, b, max;
+			r = img->data[img->nchans * (y * img->width + x) + 0];
+			g = img->data[img->nchans * (y * img->width + x) + 1];
+			b = img->data[img->nchans * (y * img->width + x) + 2];
+			max = (r > g)? r : g;
+			max = (b > max)? b : max;
+			data[y * img->width + x] = (double)max / 255.0 * 2.0 - 1.0;
+		}
+	return data;
+}
+
 
 int main(int argc, char** argv)
 {
@@ -68,7 +88,7 @@ int main(int argc, char** argv)
 			return 1;
 		}
 	
-		(examples + i)->data = sobel(img, 250);
+		(examples + i)->data = getdata(img);
 		(examples + i)->target[0] = 1.0;	
 		(examples + i)->target[1] = 0.0;	
 		
@@ -83,7 +103,7 @@ int main(int argc, char** argv)
 			return 1;
 		}
 	
-		(examples + i)->data = sobel(img, 250);
+		(examples + i)->data = getdata(img);
 		(examples + i)->target[0] = 0.0;	
 		(examples + i)->target[1] = 1.0;	
 
@@ -119,7 +139,7 @@ int main(int argc, char** argv)
 			isnotgun_val = *(out + net->total_nn - 1);		
 
 
-			printf("idx = %d    tar1 = %lf   tar2 = %lf\n", idx,*((examples + idx)->target), *((examples + idx)->target + 1));
+			//printf("idx = %d    tar1 = %lf   tar2 = %lf\n", idx,*((examples + idx)->target), *((examples + idx)->target + 1));
 			if (*((examples + idx)->target) == 1.0 && isgun_val >= isnotgun_val)
 				isguncor++;
 			else if (*((examples + idx)->target) == 1.0 && isgun_val < isnotgun_val)
