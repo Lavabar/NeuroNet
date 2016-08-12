@@ -4,6 +4,22 @@
 #include <png.h>
 #include "iplimage.h"
 
+struct IplImage *ipl_cloneimg(struct IplImage *img)
+{
+	struct IplImage *res;
+	
+	res = (struct IplImage *)malloc(sizeof(struct IplImage));
+	res->width = img->width;
+	res->height = img->height;
+
+	res->nchans = img->nchans;
+		
+	res->data = (unsigned char *)malloc(sizeof(unsigned char) * res->width * res->height * res->nchans);
+	memcpy(res->data, img->data, sizeof(char) * img->width * img->height * img->nchans);
+	return res;
+
+}
+
 void ipl_freeimg(struct IplImage **img)
 {
 	free((*img)->data);
@@ -118,4 +134,60 @@ struct IplImage *ipl_readimg(char *path, int mode)
 
 	fclose(f);
 	return res;
+}
+
+void ipl_scaleimg(struct IplImage **img, int nwidth, int nheight) 
+{
+	struct IplImage *res, *src;
+	double a, b;
+	int width, height, nchans, x, y; 
+	int x1, y1, sx, ex, sy, ey, c;
+
+	src = *img;
+	nchans = src->nchans;
+	width = src->width;
+	height = src->height;
+	a = (double)nwidth / (double)width;
+	b = (double)nheight / (double)height;
+	
+	res = (struct IplImage *)malloc(sizeof(struct IplImage));
+	res->width = nwidth;
+	res->height = nheight;
+	res->nchans = nchans;
+	res->data = (unsigned char *)malloc(sizeof(unsigned char) * nwidth * nheight * nchans);
+
+	for (y = 0; y < height - 1; y++)
+		for (x = 0; x < width - 1; x++) {
+			sx = (int)(a * x);
+			ex = (int)(a * (x + 1));
+			sy = (int)(b * y);
+			ey = (int)(b * (y + 1));
+			
+			for (x1 = sx; x1 <= ex; x1++) 
+				for (y1 = sy; y1 <= ey; y1++) 
+					for (c = 0; c < nchans; c++)
+						res->data[nchans * (y1 * nwidth + x1) + c] = src->data[nchans * (y * width + x) + c];
+		}
+
+	y1 = (int)(b * (height - 1));
+	for (x = 0; x < width - 1; x++) {
+		sx = (int)(a * x);
+		ex = (int)(a * (x + 1));
+		
+		for (x1 = sx; x1 <= ex; x1++) 
+			for (c = 0; c < nchans; c++)
+				res->data[nchans * (y1 * nwidth + x1) + c] = src->data[nchans * ((height - 1) * width + x) + c];
+	}
+
+	x1 = (int)(a * (width - 1));
+	for (y = 0; y < height - 1; y++) {
+		sy = (int)(b * y);
+		ey = (int)(b * (y + 1));
+		
+		for (y1 = sy; y1 <= ey; y1++) 
+			for (c = 0; c < nchans; c++)
+				res->data[nchans * (y1 * nwidth + x1) + c] = src->data[nchans * ((height - 1) * width + x) + c];
+	}
+	ipl_freeimg(img);
+	*img = res;
 }

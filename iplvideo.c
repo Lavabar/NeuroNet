@@ -85,32 +85,48 @@ static int readframe(struct IplDev *dev)
 static unsigned char *iommap(struct IplDev *dev)
 {
 	int rc;
-	unsigned char *res;
+//	unsigned char *res;
 	
-	res = NULL;
+/*	res = NULL;
 	res = mmap(NULL, dev->length, PROT_READ | PROT_WRITE, MAP_SHARED, dev->fd, dev->offset);
 	
 	if (res == MAP_FAILED) 
-		return NULL;
+		return NULL;*/
 	
 	while ((rc = readframe(dev)) == 0);
 	
 	if (rc < 0) {
-		free(res);
+	//	free(res);
 		fprintf(stderr, "could not read frame\n");
 		return NULL;
 	}
 	
-	return res;
+	return dev->data;
 }
-/*#define R_FROM_YUV(y, u, v) (int)((double)y + 1.13983 * ((double)v - 128.0))
-#define G_FROM_YUV(y, u, v) (int)((double)y - 0.39465 * ((double)u - 128.0) - 0.58060 * ((double)v - 128.0))
-#define B_FROM_YUV(y, u, v) (int)((double)y + 2.03211 * ((double)u - 128.0))*/
 
+static unsigned char r_from_yuv(int y, int u, int v)
+{
+	int r = (int)(y + 1.402 * (v - 128.0));
+	r = (r < 0)? 0 : r;
+	r = (r > 255)? 255 : r;
+	return r; 
+}
 
-#define R_FROM_YUV(y, u, v) (int)((double)y + 1.13983 * ((double)v - 128.0))
-#define G_FROM_YUV(y, u, v) (int)((double)y - 0.39465 * ((double)u - 128.0) - 0.58060 * ((double)v - 128.0))
-#define B_FROM_YUV(y, u, v) (int)((double)y + 2.03211 * ((double)u - 128.0))
+static unsigned char g_from_yuv(int y, int u, int v)
+{
+	int g = (int)(y - 0.34414 * (u - 128.0) - 0.71414 * (v - 128.0));
+	g = (g < 0)? 0 : g;
+	g = (g > 255)? 255 : g;
+	return g; 
+}
+
+static unsigned char b_from_yuv(int y, int u, int v)
+{
+	int b = (int)(y + 1.772 * (u - 128.0));
+	b = (b < 0)? 0 : b;
+	b = (b > 255)? 255 : b;
+	return b; 
+}
 
 static struct IplImage *yuv422_to_rgb(struct IplDev *dev, unsigned char *data) 
 {
@@ -131,13 +147,13 @@ static struct IplImage *yuv422_to_rgb(struct IplDev *dev, unsigned char *data)
 		y2 = data[i + 2];
 		v = data[i + 3];
 
-		r1 = R_FROM_YUV(y1, u, v);
-		g1 = G_FROM_YUV(y1, u, v);
-		b1 = B_FROM_YUV(y1, u, v);
+		r1 = r_from_yuv(y1, u, v);
+		g1 = g_from_yuv(y1, u, v);
+		b1 = b_from_yuv(y1, u, v);
 
-		r2 = R_FROM_YUV(y2, u, v);
-		g2 = G_FROM_YUV(y2, u, v);
-		b2 = B_FROM_YUV(y2, u, v);
+		r2 = r_from_yuv(y2, u, v);
+		g2 = g_from_yuv(y2, u, v);
+		b2 = b_from_yuv(y2, u, v);
 
 		res->data[j] = r1;
 		res->data[j + 1] = g1;
@@ -175,6 +191,7 @@ static struct IplImage *yuv422_to_gray(struct IplDev *dev, unsigned char *data)
 struct IplImage *ipl_getframe(struct IplDev *dev)
 {
 	unsigned char *data;
+	struct IplImage *img;
 	
 	if (dev->iometh == IO_READ) 
 		data = ioread(dev);
@@ -186,10 +203,19 @@ struct IplImage *ipl_getframe(struct IplDev *dev)
 	if (!data)
 		return NULL;
 
-	if (dev->mode)
-		return yuv422_to_rgb(dev, data);
-	else 
-		return yuv422_to_gray(dev, data);
+	if (dev->mode) {
+		img = yuv422_to_rgb(dev, data);
+		if (dev->force_scale && (img->width != dev->fwidth || img->height != dev->fheight)) {
+			ipl_scaleimg(&img, dev->fwidth, dev->fheight);
+		}
+		return img;
+	}
+	else {
+		img = yuv422_to_gray(dev, data);
+		if (dev->force_scale && (img->width != dev->fwidth || img->height != dev->fheight))
+			ipl_scaleimg(&img, dev->fwidth, dev->fheight);
+		return img;
+	}
 }
 
 static int setiometh(struct IplDev *dev, struct v4l2_capability *cap, char *devname)
@@ -243,70 +269,114 @@ static int setiometh(struct IplDev *dev, struct v4l2_capability *cap, char *devn
 	return -1;
 }
 
-struct IplDev *ipl_opendev(int id, int mode)
-{ 
+static int setupdev(struct IplDev *dev, int width, int height)
+{
 	struct stat st;
-	int fd;
-	struct IplDev *dev;
-	char devname[64];
-	struct v4l2_capability cap;
 	struct v4l2_format fmt;
+	struct v4l2_capability cap;
+	char devname[64];
 
 	bzero(devname, 64);
-	sprintf(devname, "/dev/video%d", id);
+	sprintf(devname, "/dev/video%d", dev->id);
 
-	if (stat(devname, &st) == -1) {
+	if ((dev->fd = open(devname, O_RDWR | O_NONBLOCK, 0)) == -1) {
+		fprintf(stderr, "can not open %s\n", devname);
+		return -1;
+	}
+
+	if (fstat(dev->fd, &st) == -1) {
 		fprintf(stderr, "can not identify %s\n", devname);
-		return NULL;
+		return -1;
 	}
 
 	if (!S_ISCHR(st.st_mode)) {
-		fprintf(stderr, "%s is no device\n", devname);
-		return NULL;
+		fprintf(stderr, "%s is not a device\n", devname);
+		return -1;
 	}
-	
-	if ((fd = open(devname, O_RDWR | O_NONBLOCK, 0)) == -1) {
-		fprintf(stderr, "can not open %s\n", devname);
-		return NULL;
-	}
-	
-	dev = (struct IplDev *)malloc(sizeof(struct IplDev));
-	dev->fd = fd;
-	dev->mode = mode;
+		
 
-	if (xioctl(fd, VIDIOC_QUERYCAP, &cap) == -1) { 
+	if (xioctl(dev->fd, VIDIOC_QUERYCAP, &cap) == -1) { 
 		fprintf(stderr, "%s is not V4L2 device\n", devname);
-		free(dev);
-		close(fd);
-		return NULL;
+		close(dev->fd);
+		return -1;
 	}
 
 	if (!(cap.capabilities & V4L2_CAP_VIDEO_CAPTURE)) {
 		if (errno == EINVAL)
 			fprintf(stderr, "not video device\n");
-		free(dev);
-		close(fd);
-		return NULL;
+		close(dev->fd);
+		return -1;
 	}	
 
-	if (setiometh(dev, &cap, devname) < 0) {
-		fprintf(stderr, "can not set io method\n");
-		close(fd);
-		free(dev);
-		return NULL;
-	}
 
 	CLEAR(fmt);	
 	fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;	
-	if (xioctl(fd, VIDIOC_G_FMT, &fmt) == -1) {
-		fprintf(stderr, "error on getting pix format\n");
-		free(dev);
-		close(fd);
-		return NULL;
+	if (width > 0 && height > 0) {
+		fmt.fmt.pix.width = width;
+		fmt.fmt.pix.height = height;
+		if (xioctl(dev->fd, VIDIOC_S_FMT, &fmt) == -1) {
+			fprintf(stderr, "error on setting device format:%s\n", strerror(errno));
+			close(dev->fd);
+			return -1;
+		}
+		dev->width = fmt.fmt.pix.width;
+		dev->height = fmt.fmt.pix.height;
+		dev->fmt = fmt.fmt.pix.pixelformat;
+	} else {
+		if (xioctl(dev->fd, VIDIOC_G_FMT, &fmt) == -1) {
+			fprintf(stderr, "error on getting pix format:%s\n", strerror(errno));
+			close(dev->fd);
+			return -1;
+		}
+		dev->width = dev->fwidth = fmt.fmt.pix.width;
+		dev->height = dev->fheight = fmt.fmt.pix.height;
+		dev->fmt = fmt.fmt.pix.pixelformat;
+	}
+
+	if (setiometh(dev, &cap, devname) < 0) {
+		fprintf(stderr, "can not set io method\n");
+		close(dev->fd);
+		return -1;
 	}
 	
-	dev->width = fmt.fmt.pix.width;
-	dev->height = fmt.fmt.pix.height;
-	dev->fmt = fmt.fmt.pix.pixelformat;
+
+	dev->data = NULL;
+	dev->data = mmap(NULL, dev->length, PROT_READ | PROT_WRITE, MAP_SHARED, dev->fd, dev->offset);
+	
+	if (dev->data == MAP_FAILED) { 
+		fprintf(stderr, "Error on mapping: %s\n", strerror(errno));
+		return -1;	
+	}
+
+	return 1;
+}
+
+int ipl_setparams(struct IplDev *dev, int width, int height, int force_scale)
+{
+	munmap(dev->data, dev->length);
+	close(dev->fd);
+		
+	width = (width <= 0)? dev->width : width;
+	height = (height <= 0)? dev->height : height;
+	dev->fwidth = width;
+	dev->fheight = height;
+	dev->force_scale = force_scale;
+	return setupdev(dev, width, height);
+}
+
+struct IplDev *ipl_opendev(int id, int mode)
+{ 
+	struct IplDev *dev;
+
+	dev = (struct IplDev *)malloc(sizeof(struct IplDev));
+	dev->id = id;
+	dev->mode = mode;
+	dev->force_scale = IPL_FORCE_SCALE_OFF;
+
+	if (setupdev(dev, 0, 0) < 0) {
+		free(dev);
+		return NULL;
+	}
+
 	return dev;
 }
