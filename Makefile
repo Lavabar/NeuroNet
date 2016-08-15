@@ -1,15 +1,7 @@
 CC=gcc
-#SRCS=iplimage.c iplvideo.c netcreat.c netpass.c netfile.c ipltransform.c vecmat.c edge_detect.c
-NETSRCS=netcreat.c net_errno.c netpass.c netfile.c edge_detect.c iplimage.c
-CFLAGS=-Wall -g -lm -lpng12
+NETSRCS=netcreat.c net_errno.c netpass.c netfile.c edge_detect.c iplimage.c neurowork.c draw.c iplvideo.c 
+CFLAGS=-Wall -g `pkg-config --libs gtk+-3.0` -lm -lpng12 `pkg-config --cflags gtk+-3.0` 
 NETOBJS=$(NETSRCS:.c=.o)
-
-#all: $(SRCS) test.c test1.c test2.c test3.c
-#	$(CC) $(CFLAGS) -I/usr/include/libpng12 -lpng12 -o test test.c $(SRCS)
-#	$(CC) $(CFLAGS) -I/usr/include/libpng12 -lpng12 -o test1 test1.c $(SRCS)
-#	$(CC) $(CFLAGS) -I/usr/include/libpng12 -lpng12 -o test2 test2.c $(SRCS)
-#	$(CC) $(CFLAGS) -I/usr/include/libpng12 -lpng12 -o test3 test3.c $(SRCS)
-#	$(CC) $(CFLAGS) -I/usr/include/libpng12 -lpng12 -o testback testback.c $(SRCS)
 
 all: test_netcreat test_fpass test_netfile test_main train main
 
@@ -47,7 +39,10 @@ train.o:train.c
 	$(CC) $(CFLAGS) -c train.c
 
 main.o:main.c
-	$(CC) $((CFLAGS) -c main.c
+	$(CC) $(CFLAGS) -c main.c
+
+neurowork.o: neurowork.c
+	$(CC) $(CFLAGS) -c neurowork.c
 
 netpass.o: netpass.c
 	$(CC) $(CFLAGS) -c netpass.c
@@ -66,6 +61,12 @@ edge_detect.o: edge_detect.c
 
 iplimage.o: iplimage.c
 	$(CC) $(CFLAGS) -c iplimage.c
+
+iplvideo.o: iplvideo.c
+	$(CC) $(CFLAGS) -c iplvideo.c
+
+draw.o: draw.c
+	$(CC) $(CFLAGS) -c draw.c
 
 clean:
 	rm test_netcreat test_fpass test_netfile test_main train main *.o
