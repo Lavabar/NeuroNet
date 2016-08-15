@@ -3,7 +3,7 @@ NETSRCS=netcreat.c net_errno.c netpass.c netfile.c edge_detect.c iplimage.c neur
 CFLAGS=-Wall -g `pkg-config --libs gtk+-3.0` -lm -lpng12 `pkg-config --cflags gtk+-3.0` 
 NETOBJS=$(NETSRCS:.c=.o)
 
-all: test_netcreat test_fpass test_netfile test_main train main
+all: test_netcreat test_fpass test_netfile test_main train beta_main main
 
 test_fpass: $(NETOBJS) test_fpass.o
 	$(CC) $(CFLAGS) -o test_fpass test_fpass.o $(NETOBJS)
@@ -19,6 +19,9 @@ test_main: $(NETOBJS) test_main.o
 
 train: $(NETOBJS) train.o
 	$(CC) $(CFLAGS) -o train train.o $(NETOBJS)
+
+beta_main: $(NETOBJS) beta_main.o
+	$(CC) $(CFLAGS) -o beta_main beta_main.o $(NETOBJS)
 
 main: $(NETOBJS) main.o
 	$(CC) $(CFLAGS) -o main main.o $(NETOBJS)
@@ -37,6 +40,9 @@ test_main.o:test_main.c
 
 train.o:train.c
 	$(CC) $(CFLAGS) -c train.c
+
+beta_main.o:beta_main.c
+	$(CC) $(CFLAGS) -c beta_main.c
 
 main.o:main.c
 	$(CC) $(CFLAGS) -c main.c
@@ -69,7 +75,7 @@ draw.o: draw.c
 	$(CC) $(CFLAGS) -c draw.c
 
 clean:
-	rm test_netcreat test_fpass test_netfile test_main train main *.o
+	rm test_netcreat test_fpass test_netfile test_main train beta_main main *.o
 
 
 

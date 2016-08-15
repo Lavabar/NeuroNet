@@ -15,8 +15,8 @@
 #define GUNS_PATH "/home/user/NeuroNet/guns"
 #define NOTGUNS_PATH "/home/user/NeuroNet/notguns"
 
-#define CNTGUNS 23
-#define CNTNOTGUNS 22
+#define CNTGUNS 44	
+#define CNTNOTGUNS 38
 #define TOTAL (CNTGUNS + CNTNOTGUNS)
 #define SAMPLE_SIZE 100
 #define ETA 0.01
@@ -115,15 +115,15 @@ int main(int argc, char** argv)
 		printf("tar1 = %lf   tar2 = %lf\n", *((examples + i)->target), *((examples + i)->target + 1));
 	getchar();*/	
 	
-	if ((stat = netfromfile(net, NEURO_PATH)) == 1) {			// read net from file or create new
+//	if ((stat = netfromfile(net, NEURO_PATH)) == 1) {			// read net from file or create new
 		if ((net = netcreat(nl, nn, SAMPLE_SIZE)) == NULL) {
 			fprintf(stderr, "netcreat: %d\n", net_errno);
 			goto exit_failure;
 		}
-	} else if (stat == -1) {
+	/*} else if (stat == -1) {
 		fprintf(stderr, "Can not open file %s: %s\n", strerror(errno), NEURO_PATH);
 		goto exit_failure;
-	}
+	}*/
 	
 	int isguncor, isgunincor;
 	int notguncor, notgunincor;

@@ -14,7 +14,7 @@
 #define NEURO_PATH "/home/user/NeuroNet/neuro.data"
 #define PICSPATH "/home/user/NeuroNet/pics"
 
-#define CNTPICS 8
+#define CNTPICS 10
 #define SAMPLE_SIZE 100
 
 struct sample {

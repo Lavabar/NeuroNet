@@ -14,6 +14,9 @@
 #include "draw.h"
 
 #define NEURO_PATH "/home/user/NeuroNet/neuro.data"
+#define SAMPLE_HEIGHT 20
+#define SAMPLE_WIDTH 50
+#define SCALE_RATE 0.8
 
 static double *getdata(struct IplImage *img, int sx, int sy, int dw, int dh)
 {
@@ -50,29 +53,30 @@ int neurowork(struct IplImage *frame)
 		goto exit_failure;
 	}
 	
-	img = frame;
+	img = ipl_cloneimg(frame);
 	int k = 0;
 
-	while (img->width >= 20 && img->height >= 50) {
+	while (img->width >= 50 && img->height >= 20) {
 		k++;
 		double isgun_val, isnotgun_val;
-		printf("w=%d h=%d\n", img->width, img->height);
-		for (y = 0; y < img->height - 50; y++) {
-			for (x = 0; x < img->width - 20; x++) {
+		//printf("w=%d h=%d\n", img->width, img->height);
+		for (y = 0; y < img->height - 20; y += 20) {
+			for (x = 0; x < img->width - 50; x += 50) {
 				double *out, *data;
-				data = getdata(img, x, y, 20, 50);
+				data = getdata(img, x, y, 50, 20);
 				out = netfpass(net, data);
 				isgun_val = *(out + net->total_nn - 2);		
 				isnotgun_val = *(out + net->total_nn - 1);
 				if (isgun_val >= isnotgun_val)
-					drawRectangle(frame, x / pow(0.98, k), y / pow(0.98, k), img->width, img->height);
-				
+					drawRectangle(frame, (int)(x / pow(SCALE_RATE, k)), (int)(y / pow(SCALE_RATE, k)), 
+						(int)(SAMPLE_WIDTH / pow(SCALE_RATE, k)), (int)(SAMPLE_HEIGHT / pow(SCALE_RATE, k)));
+
 				free(out);
 				free(data);
 			}
 		//	printf("height=%d y=%d\n", img->height, y);
 		}
-		ipl_scaleimg(&img, img->width * 0.98, img->height * 0.98);
+		ipl_scaleimg(&img, img->width * SCALE_RATE, img->height * SCALE_RATE);
 	}
 
 	return 0;
