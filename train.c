@@ -15,8 +15,8 @@
 #define GUNS_PATH "/home/user/NeuroNet/guns"
 #define NOTGUNS_PATH "/home/user/NeuroNet/notguns"
 
-#define CNTGUNS 44	
-#define CNTNOTGUNS 38
+#define CNTGUNS 57	
+#define CNTNOTGUNS 97 
 #define TOTAL (CNTGUNS + CNTNOTGUNS)
 #define SAMPLE_SIZE 100
 #define ETA 0.01
@@ -63,9 +63,8 @@ static double *getdata(struct IplImage *img)
 
 int main(int argc, char** argv)
 {
-	int stat;
 	int nl = 2;
-	int nn[] = {100, 2};
+	int nn[] = {200, 2};
 	double *out;
 	struct neuronet *net = malloc(sizeof(struct neuronet));
 
@@ -114,21 +113,22 @@ int main(int argc, char** argv)
 	/*for(i = 0; i < TOTAL; i++)
 		printf("tar1 = %lf   tar2 = %lf\n", *((examples + i)->target), *((examples + i)->target + 1));
 	getchar();*/	
+
+	/*net = netcreat(nl, nn, SAMPLE_SIZE);
+	nettofile(net, NEURO_PATH);
+	getchar();*/
 	
-//	if ((stat = netfromfile(net, NEURO_PATH)) == 1) {			// read net from file or create new
-		if ((net = netcreat(nl, nn, SAMPLE_SIZE)) == NULL) {
-			fprintf(stderr, "netcreat: %d\n", net_errno);
-			goto exit_failure;
-		}
-	/*} else if (stat == -1) {
+	if(netfromfile(net, NEURO_PATH) == -1) {
 		fprintf(stderr, "Can not open file %s: %s\n", strerror(errno), NEURO_PATH);
 		goto exit_failure;
-	}*/
-	
-	int isguncor, isgunincor;
-	int notguncor, notgunincor;
-	while(isguncor != CNTGUNS || notguncor != CNTNOTGUNS) {
-		isguncor = isgunincor = notguncor = notgunincor = 0;
+	}
+			
+//	int isguncor, isgunincor;
+//	int notguncor, notgunincor;
+	double error;
+	do { //while(error > 0.018/*isguncor != CNTGUNS || notguncor != CNTNOTGUNS*/) {
+		//isguncor = isgunincor = notguncor = notgunincor = 0;
+		error = 0;
 		for (i = 0; i < TOTAL; i++) {
 			int idx;
 			double isgun_val, isnotgun_val;
@@ -137,10 +137,17 @@ int main(int argc, char** argv)
 
 			isgun_val = *(out + net->total_nn - 2);		
 			isnotgun_val = *(out + net->total_nn - 1);		
+			
+			//error += abs(((*((examples + idx)->target) == 1)? isgun_val : isnotgun_val) - *((examples + idx)->target));
+			
+			if (*((examples + idx)->target) == 1.0)
+				error += 1.0 - isgun_val;
+			if (*((examples + idx)->target) == 0.0)
+				error += 1.0 - isnotgun_val;
 
 
 			//printf("idx = %d    tar1 = %lf   tar2 = %lf\n", idx,*((examples + idx)->target), *((examples + idx)->target + 1));
-			if (*((examples + idx)->target) == 1.0 && isgun_val >= isnotgun_val)
+			/*if (*((examples + idx)->target) == 1.0 && isgun_val >= isnotgun_val)
 				isguncor++;
 			else if (*((examples + idx)->target) == 1.0 && isgun_val < isnotgun_val)
 				notgunincor++;
@@ -148,7 +155,7 @@ int main(int argc, char** argv)
 				notguncor++;
 			else if (*((examples + idx)->target) == 0.0 && isnotgun_val < isgun_val)
 				isgunincor++;
-
+			*/
 			netbpass(net, (examples + idx)->data, out, (examples + idx)->target, ETA);
 			/*w = net->w;
 			for (i = 0; i < net->nl; i++) {
@@ -162,9 +169,11 @@ int main(int argc, char** argv)
 			
 		}
 		shufflearr(idxes, TOTAL);
-		printf("isguncor = %d isgunincor = %d    notguncor = %d  notgunincor = %d\n", isguncor, isgunincor, notguncor, notgunincor);
+		printf("error = %lf\n", (error / TOTAL));
+		//printf("isguncor = %d isgunincor = %d    notguncor = %d  notgunincor = %d\n", isguncor, isgunincor, notguncor, notgunincor);
 		nettofile(net, NEURO_PATH);
-	}
+
+	} while((error / TOTAL) > 0.04);
 	
 
 		

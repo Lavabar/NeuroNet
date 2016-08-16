@@ -42,13 +42,13 @@ int netfromfile(struct neuronet *net, char *path)
 		net_errno = NET_EINVAL;
 		goto exit_failure;
 	}
-	fseek(f, 0, SEEK_END);
+	/*fseek(f, 0, SEEK_END);
 	if(!ftell(f)) {
 		rewind(f);
 		printf("Neurodata is empty. Creating new net\n");
 		return 1;
 	}
-	rewind(f);
+	rewind(f);*/
 
 	fscanf(f, "%d\n", &(net->nl));
 
