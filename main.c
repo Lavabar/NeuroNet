@@ -11,9 +11,12 @@
 #include "ipldefs.h"
 
 #include "neurowork.h"
+#include "net_structs.h"
+#include "netfile.h"
 
 #include <gtk/gtk.h>
 #include <gdk/gdk.h>
+#define NEURO_PATH "/home/user/NeuroNet/neuro.data"
 
 int flag;
 
@@ -79,6 +82,12 @@ static void activate (GtkApplication* app, gpointer user_data)
 	gtk_box_pack_start(GTK_BOX(box), button, FALSE, FALSE, 0);
   	gtk_container_add(GTK_CONTAINER(window), box);
 	
+	struct neuronet *net = malloc(sizeof(struct neuronet));
+	if (netfromfile(net, NEURO_PATH) == -1) {
+		fprintf(stderr, "Can not open file %s: %s\n", strerror(errno), NEURO_PATH);
+		return;
+	}
+	
 	struct IplImage *frame;
 	struct IplDev *dev1;
 
@@ -113,7 +122,7 @@ static void activate (GtkApplication* app, gpointer user_data)
 		}
 		ipl_scaleimg(&frame, 640, 480);
 
-		if(neurowork(frame))
+		if(neurowork(frame, net))
 			fprintf(stderr, "error in neurowork\n");
 
 		camera_shoot(frame, pixbuf);
@@ -133,10 +142,10 @@ int main(int argc, char **argv)
 	GtkApplication *app;
   	int status;
 
-  	app = gtk_application_new ("org.gtk", G_APPLICATION_FLAGS_NONE);
-  	g_signal_connect (app, "activate", G_CALLBACK (activate), NULL);
-  	status = g_application_run (G_APPLICATION (app), argc, argv);
-  	g_object_unref (app);
+  	app = gtk_application_new("org.gtk", G_APPLICATION_FLAGS_NONE);
+  	g_signal_connect(app, "activate", G_CALLBACK(activate), NULL);
+  	status = g_application_run(G_APPLICATION(app), argc, argv);
+  	g_object_unref(app);
 
   	return status;
 }

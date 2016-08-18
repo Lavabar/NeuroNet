@@ -37,8 +37,8 @@ int main()
 	//nettofile(net, "/home/user/NeuroNet/neuro.data");
 	
 	netfromfile(net, "/home/user/NeuroNet/neuro.data");	
-		
-	w = net->w;
+	getchar();	
+	/*w = net->w;
 	for (i = 0; i < net->nl; i++) {
 		for(j = 0; j < net->nn[i]; j++) {
 			for(k = 0; k < net->nw[i]; k++)
@@ -46,7 +46,7 @@ int main()
 			printf(" ");
 		}
 		printf("\n");
-	}
+	}*/
 
 //	printf("w=%x\n", net->w); 
 

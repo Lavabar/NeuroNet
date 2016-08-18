@@ -4,6 +4,6 @@
 #include "iplimage.h"
 #include "net_structs.h"
 
-int neurowork(struct IplImage *frame);
+int neurowork(struct IplImage *frame, struct neuronet *net);
 
 #endif

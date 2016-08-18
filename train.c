@@ -17,9 +17,9 @@
 #define NOTGUNS_PATH "/home/user/NeuroNet/notguns"
 
 #define CNTGUNS 156	
-#define CNTNOTGUNS 106 
+#define CNTNOTGUNS 141 
 #define TOTAL (CNTGUNS + CNTNOTGUNS)
-#define SAMPLE_SIZE 100
+#define SAMPLE_SIZE 1000
 #define ETA 0.01
 
 struct sample {
@@ -67,8 +67,7 @@ int main(int argc, char** argv)
 	int nl = 2;
 	int nn[] = {200, 2};
 	double *out;
-	struct neuronet *net = malloc(sizeof(struct neuronet));
-
+	
 	struct sample *examples;
 	int *idxes;	
 	
@@ -76,6 +75,12 @@ int main(int argc, char** argv)
 
 	char name[256];
 	struct IplImage *img;
+	struct neuronet *net = malloc(sizeof(struct neuronet));
+	if (netfromfile(net, NEURO_PATH) == -1) {
+		fprintf(stderr, "Can not open file %s: %s\n", strerror(errno), NEURO_PATH);
+		goto exit_failure;
+	}
+
 
 	examples = (struct sample *)malloc(sizeof(struct sample) * TOTAL);
 	idxes = (int *)malloc(sizeof(int) * TOTAL);	
@@ -119,11 +124,7 @@ int main(int argc, char** argv)
 	nettofile(net, NEURO_PATH);
 	getchar();*/
 	
-	if(netfromfile(net, NEURO_PATH) == -1) {
-		fprintf(stderr, "Can not open file %s: %s\n", strerror(errno), NEURO_PATH);
-		goto exit_failure;
-	}
-			
+				
 //	int isguncor, isgunincor;
 //	int notguncor, notgunincor;
 	double error;
@@ -160,7 +161,7 @@ int main(int argc, char** argv)
 				isgunincor++;
 			*/
 			netbpass(net, (examples + idx)->data, out, (examples + idx)->target, ETA);
-			getchar();	
+			//getchar();	
 			free(out);
 			/*w = net->w;
 			for (i = 0; i < net->nl; i++) {

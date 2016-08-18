@@ -22,6 +22,7 @@ double *netfpass(struct neuronet *net, double *inp)
 		for (j = 0; j < net->nn[i]; j++) {
 			double sum = 0.0;
 			int nw = net->nw[i];
+			//printf("w = %lf\n", *w);
 			for (k = 0; k < nw; k++) 
 				sum += (*w++) * inp[k];
 			*out++ = 1.0 / (1.0 + exp(-sum));

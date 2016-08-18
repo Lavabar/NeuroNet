@@ -15,7 +15,7 @@
 
 #define SAMPLE_HEIGHT 20
 #define SAMPLE_WIDTH 50
-#define SCALE_RATE 0.8
+#define SCALE_RATE 0.7
 
 #define NEURO_PATH "/home/user/NeuroNet/neuro.data"
 
@@ -38,33 +38,26 @@ static double *getdata(struct IplImage *img, int sx, int sy, int dw, int dh)
 	return data;
 }
 
-int neurowork(struct IplImage *frame)
+int neurowork(struct IplImage *frame, struct neuronet *net)
 {
 	int x, y;
 	struct IplImage *img;
 	int k = 0;
 
+	double *out, *data;
 	img = ipl_cloneimg(frame);
-
-	struct neuronet *net = malloc(sizeof(struct neuronet));
-	if (netfromfile(net, NEURO_PATH) == -1) {			// read net from file or create new
-		fprintf(stderr, "Can not open file %s: %s\n", strerror(errno), NEURO_PATH);
-		goto exit_failure;
-	}
-
 
 	while (img->width >= 50 && img->height >= 20) {
 		double isgun_val, isnotgun_val;
 		//printf("w=%d h=%d\n", img->width, img->height);
-		for (y = 0; y < img->height - 25; y += 25) {
-			for (x = 0; x < img->width - 10; x += 10) {
-				double *out, *data;
+		for (y = 0; y < img->height - 50; y += 50) {
+			for (x = 0; x < img->width - 20; x += 20) {
 				data = getdata(img, x, y, 50, 20);
 				out = netfpass(net, data);
 				isgun_val = *(out + net->total_nn - 2);		
 				isnotgun_val = *(out + net->total_nn - 1);
-				//printf("isgun_val = %lf    |   isnotgun_val = %lf\n", isgun_val, isnotgun_val);
-				if (isgun_val >= 0.6 && isnotgun_val <= 0.4)
+				printf("isgun_val = %lf    |   isnotgun_val = %lf\n", isgun_val, isnotgun_val);
+				/*if (isgun_val >= 0.6 && isnotgun_val <= 0.3)
 				{
 					//printf("here\n");
 					//printf("x = %d | y = %d     w = %d | h = %d     k = %d\n", (int)(x / pow(SCALE_RATE, k)), (int)(y / pow(SCALE_RATE, k)), (int)(SAMPLE_WIDTH / pow(SCALE_RATE, k)), (int)(SAMPLE_HEIGHT / pow(SCALE_RATE, k)), k);
@@ -75,7 +68,7 @@ int neurowork(struct IplImage *frame)
 					x2 = x1 + SAMPLE_WIDTH / pow(SCALE_RATE, k);
 					y2 = y1 + SAMPLE_HEIGHT / pow(SCALE_RATE, k); 
 					drawRectangle(frame, x1, y1, x2, y2);
-				}
+				}*/
 				free(out);
 				free(data);
 			}
@@ -84,6 +77,7 @@ int neurowork(struct IplImage *frame)
 		k++;
 		ipl_scaleimg(&img, img->width * SCALE_RATE, img->height * SCALE_RATE);
 	}
+
 	//printf("\nframe\n");
 	return 0;
 	
