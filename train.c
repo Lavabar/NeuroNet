@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <math.h>
 #include "netcreat.h"
 #include "net_structs.h"
 #include "netpass.h"
@@ -15,8 +16,8 @@
 #define GUNS_PATH "/home/user/NeuroNet/guns"
 #define NOTGUNS_PATH "/home/user/NeuroNet/notguns"
 
-#define CNTGUNS 57	
-#define CNTNOTGUNS 97 
+#define CNTGUNS 156	
+#define CNTNOTGUNS 106 
 #define TOTAL (CNTGUNS + CNTNOTGUNS)
 #define SAMPLE_SIZE 100
 #define ETA 0.01
@@ -145,6 +146,8 @@ int main(int argc, char** argv)
 			if (*((examples + idx)->target) == 0.0)
 				error += 1.0 - isnotgun_val;
 
+			error += fabs((examples + idx)->target[0] - isgun_val) + fabs((examples + idx)->target[1] - isnotgun_val);
+
 
 			//printf("idx = %d    tar1 = %lf   tar2 = %lf\n", idx,*((examples + idx)->target), *((examples + idx)->target + 1));
 			/*if (*((examples + idx)->target) == 1.0 && isgun_val >= isnotgun_val)
@@ -157,6 +160,8 @@ int main(int argc, char** argv)
 				isgunincor++;
 			*/
 			netbpass(net, (examples + idx)->data, out, (examples + idx)->target, ETA);
+			getchar();	
+			free(out);
 			/*w = net->w;
 			for (i = 0; i < net->nl; i++) {
 				for(j = 0; j < net->nn[i]; j++) {
@@ -169,11 +174,11 @@ int main(int argc, char** argv)
 			
 		}
 		shufflearr(idxes, TOTAL);
-		printf("error = %lf\n", (error / TOTAL));
+		printf("error = %lf\n", (error / TOTAL / 2));
 		//printf("isguncor = %d isgunincor = %d    notguncor = %d  notgunincor = %d\n", isguncor, isgunincor, notguncor, notgunincor);
 		nettofile(net, NEURO_PATH);
 
-	} while((error / TOTAL) > 0.04);
+	} while((error / TOTAL / 2) > 0.02);
 	
 
 		

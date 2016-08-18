@@ -42,7 +42,7 @@ void drawRectangle(struct IplImage *img, int x, int y, int x2, int y2)
 	g = rand() % 255;
 	b = rand() % 255; */
 	r = 255;
-	g = 47;
+	g = 255;
 	b = 0;
 //	printf("(%d %d) (%d %d)\n", x, y, x2, y2);
 	x1 = x;

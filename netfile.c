@@ -19,7 +19,6 @@ void nettofile(struct neuronet *net, char *path)
 	fprintf(f, "%d\n", net->nl);
 	for (i = 0; i < net->nl; i++)	
 		fprintf(f, "%d\n", *(net->nn + i));
-
 	for (i = 0; i < net->nl; i++)	
 		fprintf(f, "%d\n", *(net->nw + i));
 

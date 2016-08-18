@@ -13,10 +13,11 @@
 #include "edge_detect.h"
 #include "draw.h"
 
-#define NEURO_PATH "/home/user/NeuroNet/neuro.data"
 #define SAMPLE_HEIGHT 20
 #define SAMPLE_WIDTH 50
-#define SCALE_RATE 0.7
+#define SCALE_RATE 0.8
+
+#define NEURO_PATH "/home/user/NeuroNet/neuro.data"
 
 static double *getdata(struct IplImage *img, int sx, int sy, int dw, int dh)
 {
@@ -39,22 +40,18 @@ static double *getdata(struct IplImage *img, int sx, int sy, int dw, int dh)
 
 int neurowork(struct IplImage *frame)
 {
-	int stat;
-	//int nl = 2;
-	//int nn[] = {100, 2};
-	struct neuronet *net = malloc(sizeof(struct neuronet));
-
 	int x, y;
-
 	struct IplImage *img;
+	int k = 0;
 
-	if ((stat = netfromfile(net, NEURO_PATH)) == -1) {			// read net from file or create new
+	img = ipl_cloneimg(frame);
+
+	struct neuronet *net = malloc(sizeof(struct neuronet));
+	if (netfromfile(net, NEURO_PATH) == -1) {			// read net from file or create new
 		fprintf(stderr, "Can not open file %s: %s\n", strerror(errno), NEURO_PATH);
 		goto exit_failure;
 	}
-	
-	img = ipl_cloneimg(frame);
-	int k = 0;
+
 
 	while (img->width >= 50 && img->height >= 20) {
 		double isgun_val, isnotgun_val;
@@ -66,8 +63,10 @@ int neurowork(struct IplImage *frame)
 				out = netfpass(net, data);
 				isgun_val = *(out + net->total_nn - 2);		
 				isnotgun_val = *(out + net->total_nn - 1);
-				if (isgun_val >= 0.5 && isnotgun_val <= 0.3)
+				//printf("isgun_val = %lf    |   isnotgun_val = %lf\n", isgun_val, isnotgun_val);
+				if (isgun_val >= 0.6 && isnotgun_val <= 0.4)
 				{
+					//printf("here\n");
 					//printf("x = %d | y = %d     w = %d | h = %d     k = %d\n", (int)(x / pow(SCALE_RATE, k)), (int)(y / pow(SCALE_RATE, k)), (int)(SAMPLE_WIDTH / pow(SCALE_RATE, k)), (int)(SAMPLE_HEIGHT / pow(SCALE_RATE, k)), k);
 					int x1, x2;
 					int y1, y2;

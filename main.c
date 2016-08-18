@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <time.h>
+#include <errno.h>
 
 #include <string.h>
 #include <png.h>
@@ -84,6 +85,7 @@ static void activate (GtkApplication* app, gpointer user_data)
 	time_t start, end;
 	int f;
 
+	
 	f = 0;
 	start = 0;
 	end = 0;

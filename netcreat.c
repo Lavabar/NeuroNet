@@ -24,7 +24,7 @@ static int validate_args(int nl, int *nn, int ninp)
 struct neuronet *netcreat(int nl, int *nn, int ninp)
 {
     int i, nperc;
-	double *w;
+    double *w;
     struct neuronet *res;
 
 	if (validate_args(nl, nn, ninp) != 0) {
