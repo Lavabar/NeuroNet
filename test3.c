@@ -9,29 +9,11 @@
 #include "net_structs.h"
 #include "netpass.h"
 #include "netfile.h"
+#include "net_def.h"
+#include "neurowork.h"
 
-#define PATH "/home/vadim/libipl/neuro.data"
-#define FACE_PATH "/home/vadim/test_cam/faces/"
-#define NONFACE_PATH "/home/vadim/test_cam/nonfaces/"
-
-double *getdata(struct IplImage *img, int sx, int sy, int dw, int dh)
-{
-	int x, y, x1, y1;
-	double *data;
-	
-	data = (double *)malloc(sizeof(double) * dw * dh);
-	for (y = sy, y1 = 0; y < sy + dh; y++, y1++)
-		for (x = sx, x1 = 0; x < sx + dw; x++, x1++) {
-			unsigned char r, g, b, max;
-			r = img->data[img->nchans * (y * img->width + x) + 0];
-			g = img->data[img->nchans * (y * img->width + x) + 1];
-			b = img->data[img->nchans * (y * img->width + x) + 2];
-			max = (r > g)? r : g;
-			max = (b > max)? b : max;
-			data[y1 * dw + x1] = (double)max / 255.0 * 2.0 - 1.0;
-		}
-	return data;
-}
+#define GUN_NEURO_PATH "/home/user/NeuroNet/gun_neuro.data"
+#define NOTGUN_NEURO_PATH "/home/user/NeuroNet/notgun_neuro.data"
 
 int main()
 {
@@ -44,7 +26,17 @@ int main()
 	struct neuronet net;
 	double *data;
 
-	netfromfile(&net, PATH);
+	gun_net = (struct neuronet *)malloc(sizeof(struct neuronet));
+	notgun_net = (struct neuronet *)malloc(sizeof(struct neuronet));
+	if (netfromfile(gun_net, GUN_NEURO_PATH) == -1) {
+		fprintf(stderr, "Can not open file %s: %s\n", strerror(errno), GUN_NEURO_PATH);
+		return -1;
+	}
+	if (netfromfile(notgun_net, NOTGUN_NEURO_PATH) == -1) {
+		fprintf(stderr, "Can not open file %s: %s\n", strerror(errno), NOTGUN_NEURO_PATH);
+		return -1;
+	}
+
 
 	if ((dev = ipl_opendev(1, IPL_RGB_MODE)) == NULL)	 {
 		printf("error while creating device\n");

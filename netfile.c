@@ -63,11 +63,10 @@ int netfromfile(struct neuronet *net, char *path)
 	fscanf(f, "%d\n", &(net->total_nn));
 	fscanf(f, "%d\n", &(net->total_nw));
 	
-	net->w = (double *)malloc(sizeof(double *) * net->total_nw);
+	net->w = (double *)malloc(sizeof(double) * net->total_nw);
 
-	for (i = 0; i < net->nl; i++)
-		for (j = 0; j < *(net->nn + i) * *(net->nw + i); j++)
-			fscanf(f, "%lf\n", net->w++);
+	for (i = 0; i < net->total_nw; i++)
+		fscanf(f, "%lf\n", net->w++);
 	
 	net->w -= net->total_nw;
 

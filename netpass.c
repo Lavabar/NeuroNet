@@ -10,7 +10,7 @@ double *netfpass(struct neuronet *net, double *inp)
 	double *out;
 	double *w;
 	
-	if ((out = (double *)malloc(sizeof(double *) * net->total_nn)) == NULL) {
+	if ((out = (double *)malloc(sizeof(double) * net->total_nn)) == NULL) {
 		net_errno = NET_ENOMEM;
 		out = NULL;
 		goto exit_failure;

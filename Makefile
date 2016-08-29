@@ -1,9 +1,9 @@
 CC=gcc
-NETSRCS=netcreat.c net_errno.c netpass.c netfile.c edge_detect.c iplimage.c neurowork.c draw.c iplvideo.c 
+NETSRCS=netcreat.c net_errno.c netpass.c netfile.c edge_detect.c iplimage.c draw.c iplvideo.c neurowork.c
 CFLAGS=-Wall -g `pkg-config --libs gtk+-3.0` -lm -lpng12 `pkg-config --cflags gtk+-3.0` 
 NETOBJS=$(NETSRCS:.c=.o)
 
-all: test_netcreat test_fpass test_netfile test_main train beta_main main
+all: test_netcreat test_fpass test_netfile test_main guntrain notguntrain beta_main main test_net #bigmain
 
 test_fpass: $(NETOBJS) test_fpass.o
 	$(CC) $(CFLAGS) -o test_fpass test_fpass.o $(NETOBJS)
@@ -17,14 +17,23 @@ test_netfile: $(NETOBJS) test_netfile.o
 test_main: $(NETOBJS) test_main.o
 	$(CC) $(CFLAGS) -o test_main test_main.o $(NETOBJS)
 
-train: $(NETOBJS) train.o
-	$(CC) $(CFLAGS) -o train train.o $(NETOBJS)
+guntrain: $(NETOBJS) guntrain.o
+	$(CC) $(CFLAGS) -o guntrain guntrain.o $(NETOBJS)
+
+notguntrain: $(NETOBJS) notguntrain.o
+	$(CC) $(CFLAGS) -o notguntrain notguntrain.o $(NETOBJS)
 
 beta_main: $(NETOBJS) beta_main.o
 	$(CC) $(CFLAGS) -o beta_main beta_main.o $(NETOBJS)
 
 main: $(NETOBJS) main.o
 	$(CC) $(CFLAGS) -o main main.o $(NETOBJS)
+
+#bigmain: $(NETOBJS) bigmain.o
+#	$(CC) $(CFLAGS) -o bigmain bigmain.o $(NETOBJS)
+
+test_net: $(NETOBJS) test_net.o
+	$(CC) $(CFLAGS) -o test_net test_net.o $(NETOBJS)
 
 test_fpass.o:test_fpass.c
 	$(CC) $(CFLAGS) -c test_fpass.c	
@@ -38,14 +47,23 @@ test_netfile.o:test_netfile.c
 test_main.o:test_main.c
 	$(CC) $(CFLAGS) -c test_main.c
 
-train.o:train.c
-	$(CC) $(CFLAGS) -c train.c
+guntrain.o:guntrain.c
+	$(CC) $(CFLAGS) -c guntrain.c
+
+notguntrain.o:notguntrain.c
+	$(CC) $(CFLAGS) -c notguntrain.c
 
 beta_main.o:beta_main.c
 	$(CC) $(CFLAGS) -c beta_main.c
 
 main.o:main.c
 	$(CC) $(CFLAGS) -c main.c
+
+#bigmain.o:bigmain.c
+#	$(CC) $(CFLAGS) -c bigmain.c
+
+test_net.o:test_net.c
+	$(CC) $(CFLAGS) -c test_net.c
 
 neurowork.o: neurowork.c
 	$(CC) $(CFLAGS) -c neurowork.c
@@ -75,7 +93,4 @@ draw.o: draw.c
 	$(CC) $(CFLAGS) -c draw.c
 
 clean:
-	rm test_netcreat test_fpass test_netfile test_main train beta_main main *.o
-
-
-
+	rm test_netcreat test_fpass test_netfile test_main train beta_main main test_net *.o #bigmain

@@ -1,54 +1,50 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "netcreat.h"
+#include <string.h>
+#include <math.h>
+#include <errno.h>
+
+#include "draw.h"
+
+#include <string.h>
+#include <png.h>
+#include "iplimage.h"
+#include "iplvideo.h"
+#include "ipldefs.h"
+
 #include "net_structs.h"
 #include "netfile.h"
+#include "netpass.h"
+#include "net_errno.h"
 
-int main()
+#include <gtk/gtk.h>
+#include <gdk/gdk.h>
+
+#define SAMPLE_HEIGHT 20
+#define SAMPLE_WIDTH 50
+#define SCALE_RATE 0.7
+
+#define NEURO_PATH "/home/user/NeuroNet/neuro.data"
+
+static void activate(GtkApplication* app, gpointer user_data)
 {
-	/*int nl = 2;
-	int nn[] = {3, 1};
-	int ninp = 2;*/
-	double *w;
+	printf("12");
+}
+
+
+int main(int argc, char **argv)
+{
+	GtkApplication *app;
+  	int status;
+
 	struct neuronet *net = malloc(sizeof(struct neuronet));
+
+	netfromfile(net, NEURO_PATH);
 	
-	int i, j, k;
+	app = gtk_application_new("org.gtk", G_APPLICATION_FLAGS_NONE);
+  	g_signal_connect(app, "activate", G_CALLBACK(activate), NULL);
+  	status = g_application_run(G_APPLICATION(app), argc, argv);
+  	g_object_unref(app);
 
-	/*if ((net = netcreat(nl, nn, ninp)) == NULL) {
-		fprintf(stderr, "error\n");
-		return 1;
-	}
-	w = net->w;
-
-	for (i = 0; i < nl; i++) {
-		for(j = 0; j < net->nn[i]; j++) {
-			for(k = 0; k < net->nw[i]; k++)
-				printf("%lf|", *w++);
-			printf(" ");
-		}
-		printf("\n");
-	}
-
-	printf("\n");
-	printf("\n");
-	printf("\n");*/
-
-
-	//nettofile(net, "/home/user/NeuroNet/neuro.data");
-	
-	netfromfile(net, "/home/user/NeuroNet/neuro.data");	
-	getchar();	
-	/*w = net->w;
-	for (i = 0; i < net->nl; i++) {
-		for(j = 0; j < net->nn[i]; j++) {
-			for(k = 0; k < net->nw[i]; k++)
-				printf("%lf|", *w++);
-			printf(" ");
-		}
-		printf("\n");
-	}*/
-
-//	printf("w=%x\n", net->w); 
-
-	return 0; 
+  	return status;
 }

@@ -1,8 +1,10 @@
-#include <stdlib.h>
 #include <stdio.h>
-#include <unistd.h>
-#include <time.h>
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
 #include <errno.h>
+
+#include "draw.h"
 
 #include <string.h>
 #include <png.h>
@@ -10,22 +12,89 @@
 #include "iplvideo.h"
 #include "ipldefs.h"
 
-#include "neurowork.h"
 #include "net_structs.h"
 #include "netfile.h"
+#include "netpass.h"
+#include "net_errno.h"
 #include "net_def.h"
 
 #include <gtk/gtk.h>
 #include <gdk/gdk.h>
 
-#define GUN_NEURO_PATH "/home/user/NeuroNet/gun_neuro.data"
-#define NOTGUN_NEURO_PATH "/home/user/NeuroNet/notgun_neuro.data"
+#define SAMPLE_HEIGHT 20
+#define SAMPLE_WIDTH 50
+#define SCALE_RATE 0.7
+
+#define NEURO_PATH "/home/user/NeuroNet/neuro.data"
+
+static double *getdata(struct IplImage *img, int sx, int sy, int dw, int dh)
+{
+	int x, y, x1, y1;
+	double *data;
+	
+	data = (double *)malloc(sizeof(double) * dw * dh);
+	for (y = sy, y1 = 0; y < sy + dh; y++, y1++)
+		for (x = sx, x1 = 0; x < sx + dw; x++, x1++) {
+			unsigned char r, g, b, max;
+			r = img->data[img->nchans * (y * img->width + x) + 0];
+			g = img->data[img->nchans * (y * img->width + x) + 1];
+			b = img->data[img->nchans * (y * img->width + x) + 2];
+			max = (r > g)? r : g;
+			max = (b > max)? b : max;
+			data[y1 * dw + x1] = (double)max / 255.0 * 2.0 - 1.0;
+		}
+	return data;
+}
+
+int neurowork(struct IplImage *frame, struct neuronet *net)
+{
+	int x, y;
+	struct IplImage *img;
+	int k = 0;
+
+	double *out, *data;
+	img = ipl_cloneimg(frame);
+
+	while (img->width >= 50 && img->height >= 20) {
+		double isgun_val, isnotgun_val;
+		//printf("w=%d h=%d\n", img->width, img->height);
+		for (y = 0; y < img->height - 50; y += 50) {
+			for (x = 0; x < img->width - 20; x += 20) {
+				data = getdata(img, x, y, 50, 20);
+				out = netfpass(net, data);
+				isgun_val = *(out + net->total_nn - 2);		
+				isnotgun_val = *(out + net->total_nn - 1);
+				//printf("isgun_val = %lf    |   isnotgun_val = %lf\n", isgun_val, isnotgun_val);
+				if (isgun_val >= 0.6 && isnotgun_val <= 0.3)
+				{
+					//printf("here\n");
+					//printf("x = %d | y = %d     w = %d | h = %d     k = %d\n", (int)(x / pow(SCALE_RATE, k)), (int)(y / pow(SCALE_RATE, k)), (int)(SAMPLE_WIDTH / pow(SCALE_RATE, k)), (int)(SAMPLE_HEIGHT / pow(SCALE_RATE, k)), k);
+					int x1, x2;
+					int y1, y2;
+					x1 = x / pow(SCALE_RATE, k);
+					y1 = y / pow(SCALE_RATE, k);
+					x2 = x1 + SAMPLE_WIDTH / pow(SCALE_RATE, k);
+					y2 = y1 + SAMPLE_HEIGHT / pow(SCALE_RATE, k); 
+					drawRectangle(frame, x1, y1, x2, y2);
+				}
+				free(out);
+				free(data);
+			}
+		//	printf("height=%d y=%d\n", img->height, y);
+		}
+		k++;
+		ipl_scaleimg(&img, img->width * SCALE_RATE, img->height * SCALE_RATE);
+	}
+
+	//printf("\nframe\n");
+	return 0;
+}
 
 int flag;
 
 static void print_txt(GtkWidget *widget, gpointer data)
 {
-	g_print ("Cancel\n");
+  g_print("Cancel\n");
 }
 
 static void flag_zero(GtkWidget *widget, gpointer data)
@@ -62,8 +131,10 @@ static int camera_shoot(struct IplImage *img, GdkPixbuf *pixbuf)
 
 	return 0;	
 }
-static void activate (GtkApplication* app, gpointer user_data)
-{
+
+
+static void activate(GtkApplication* app, gpointer user_data)
+{	
 	GtkWidget *window;
 	GtkWidget *image;
 	GtkWidget *button, *box;
@@ -84,13 +155,12 @@ static void activate (GtkApplication* app, gpointer user_data)
   	gtk_box_pack_start(GTK_BOX(box), image, TRUE, TRUE, 0);
 	gtk_box_pack_start(GTK_BOX(box), button, FALSE, FALSE, 0);
   	gtk_container_add(GTK_CONTAINER(window), box);
-		
+	
 	struct IplImage *frame;
 	struct IplDev *dev1;
 
 	time_t start, end;
 	int f;
-
 	
 	f = 0;
 	start = 0;
@@ -119,7 +189,7 @@ static void activate (GtkApplication* app, gpointer user_data)
 		}
 		ipl_scaleimg(&frame, 640, 480);
 
-		if(neurowork(frame))
+		if(neurowork(frame, net))
 			fprintf(stderr, "error in neurowork\n");
 
 		camera_shoot(frame, pixbuf);
@@ -129,6 +199,7 @@ static void activate (GtkApplication* app, gpointer user_data)
 
   		gtk_widget_show_all (window);
 		gtk_main_iteration_do(FALSE);
+
 		ipl_freeimg(&frame);
 	}
 }
@@ -138,17 +209,11 @@ int main(int argc, char **argv)
 	GtkApplication *app;
   	int status;
 
-	gun_net = (struct neuronet *)malloc(sizeof(struct neuronet));
-	notgun_net = (struct neuronet *)malloc(sizeof(struct neuronet));
-	if (netfromfile(gun_net, GUN_NEURO_PATH) == -1) {
-		fprintf(stderr, "Can not open file %s: %s\n", strerror(errno), GUN_NEURO_PATH);
-		return -1;
-	}
-	if (netfromfile(notgun_net, NOTGUN_NEURO_PATH) == -1) {
-		fprintf(stderr, "Can not open file %s: %s\n", strerror(errno), NOTGUN_NEURO_PATH);
-		return -1;
-	}
-
+	/*struct neuronet *net = malloc(sizeof(struct neuronet));
+	netfromfile(net, NEURO_PATH);*/
+	net = (struct neuronet *)malloc(sizeof(struct neuronet));
+	netfromfile(NEURO_PATH);
+	
 	app = gtk_application_new("org.gtk", G_APPLICATION_FLAGS_NONE);
   	g_signal_connect(app, "activate", G_CALLBACK(activate), NULL);
   	status = g_application_run(G_APPLICATION(app), argc, argv);
