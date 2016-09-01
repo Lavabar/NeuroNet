@@ -1,5 +1,5 @@
 CC=gcc
-NETSRCS=netcreat.c net_errno.c netpass.c netfile.c edge_detect.c iplimage.c draw.c iplvideo.c neurowork.c hough.c
+NETSRCS=netcreat.c net_errno.c netpass.c netfile.c iplimage.c draw.c iplvideo.c neurowork.c hough.c
 CFLAGS=-Wall -g `pkg-config --libs gtk+-3.0` -lm -lpng12 `pkg-config --cflags gtk+-3.0` 
 NETOBJS=$(NETSRCS:.c=.o)
 
@@ -85,9 +85,6 @@ netfile.o: netfile.c
 
 net_errno.o: net_errno.c
 	$(CC) $(CFLAGS) -c net_errno.c
-
-edge_detect.o: edge_detect.c
-	$(CC) $(CFLAGS) -c edge_detect.c
 
 iplimage.o: iplimage.c
 	$(CC) $(CFLAGS) -c iplimage.c

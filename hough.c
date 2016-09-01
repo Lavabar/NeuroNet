@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 #include "iplimage.h"
+#include "ipldefs.h"
 
 /*unsigned char otsu(struct IplImage *img)
 {
@@ -11,7 +13,7 @@
 
 	int square = (img->width * img->height);
 
-	maxsigma = 0;
+	maxsigma = -1;
 	tmp = 0;
 	min = 255;
 	max = 0;
@@ -52,77 +54,131 @@
 	return thres + min;
 }*/
 
-unsigned char otsu(struct IplImage *img)
+static unsigned char otsu(struct IplImage *img)
 {
-   int min=img->data[0], max=img->data[0];
-   int i, temp, temp1;
-   int *hist;
-   int histSize;
-   int size = img->width * img->height;
+	int min=img->data[0], max=img->data[0];
+	int i, temp, temp1;
+	int *hist;
+	int histSize;
+	int size = img->width * img->height;
 
-   int alpha, beta, threshold=0;
-   double sigma, maxSigma=-1;
-   double w1,a;
+	int alpha, beta, threshold = 0;
+	double sigma, maxSigma = -1;
+	double w1,a;
 
 /**** Построение гистограммы ****/
 /* Узнаем наибольший и наименьший полутон */
-   for(i=1;i<size;i++)
-   {
-      temp=img->data[i];
-      if(temp<min)   min = temp;
-      if(temp>max)   max = temp;
-   }
+	for (i = 1; i < size; i++) {
+		temp = img->data[i];
+		if(temp < min)min = temp;
+		if(temp > max)max = temp;
+	}
 
-   histSize=max-min+1;
-   if((hist=(int*) malloc(sizeof(int)*histSize))==NULL) return -1;
+	histSize = max - min + 1;
+	
+	if((hist = (int *)malloc(sizeof(int) * histSize)) == NULL) 
+		return -1;
 
-   for(i=0;i<histSize;i++)
-      hist[i]=0;
+	for (i = 0; i < histSize; i++)
+		hist[i] = 0;
 
 /* Считаем сколько каких полутонов */
-   for(i=0;i<size;i++)
-      hist[img->data[i]-min]++;
+	for (i = 0; i < size; i++)
+		hist[img->data[i]-min]++;
 
 /**** Гистограмма построена ****/
 
-   temp=temp1=0;
-   alpha=beta=0;
+	temp = temp1 = 0;
+	alpha = beta = 0;
 /* Для расчета математического ожидания первого класса */
-   for(i=0;i<=(max-min);i++)
-   {
-      temp += i*hist[i];
-      temp1 += hist[i];
-   }
+	for (i = 0; i <= (max - min); i++) {
+		temp += i*hist[i];
+		temp1 += hist[i];
+	}
 
 /* Основной цикл поиска порога
 Пробегаемся по всем полутонам для поиска такого, при котором внутриклассовая дисперсия минимальна */
-   for(i=0;i<(max-min);i++)
-   {
-      alpha+= i*hist[i];
-      beta+=hist[i];
+	for (i = 0; i < (max - min); i++) {
+		alpha += i * hist[i];
+		beta += hist[i];
 
-      w1 = (double)beta / temp1;
-      a = (double)alpha / beta - (double)(temp - alpha) / (temp1 - beta);
-      sigma=w1*(1-w1)*a*a;
-    
-      if(sigma>maxSigma)
-      {
-         maxSigma=sigma;
-         threshold=i;
-      }
-   }
-   free(hist);
-   return threshold + min;
+	w1 = (double)beta / temp1;
+	a = (double)alpha / beta - (double)(temp - alpha) / (temp1 - beta);
+	sigma = w1 * (1 - w1) * a * a;
+
+	if (sigma > maxSigma) {
+		maxSigma=sigma;
+		threshold=i;
+		}
+	}
+	free(hist);
+	return threshold + min;
 }
 
-/*static void cunny(struct IplImage *img)
+static int corrind(int x, int y, int w, int h)
 {
-	int thres;
-	thres = otsu(img);
+	int x1, y1;
 
+	x1 = (x < 0) ? 0 : x;
+	x1 = (x1 >= w)? w - 1 : x1;
+
+
+	y1 = (y < 0) ? 0 : y;
+	y1 = (y1 >= h)? h - 1 : y1;
+
+	return y1 * w + x1;
 }
 
+static void grad(const unsigned char *vdata, int w, int h, int x, int y, double *gx, double *gy)
+{
+	*gx = vdata[corrind(x - 1, y + 1, w, h)] + 2.0 * vdata[corrind(x, y + 1, w, h)] + vdata[corrind(x + 1, y + 1, w, h)]
+		- (vdata[corrind(x - 1, y - 1, w, h)] + 2.0 * vdata[corrind(x, y - 1, w, h)] + vdata[corrind(x + 1, y - 1, w, h)]);
+	*gy = vdata[corrind(x + 1, y - 1, w, h)] + 2.0 * vdata[corrind(x + 1, y, w, h)] + vdata[corrind(x + 1, y + 1, w, h)]
+		- (vdata[corrind(x - 1, y - 1, w, h)] + 2.0 * vdata[corrind(x - 1, y, w, h)] + vdata[corrind(x - 1, y + 1, w, h)]);
+
+	/* *gx = vdata[corrind(x - 1, y + 1, w, h)] + 4.0 * vdata[corrind(x, y + 1, w, h)] + vdata[corrind(x + 1, y + 1, w, h)]
+		- (vdata[corrind(x - 1, y - 1, w, h)] + 4.0 * vdata[corrind(x, y - 1, w, h)] + vdata[corrind(x + 1, y - 1, w, h)]);
+	*gy = vdata[corrind(x + 1, y - 1, w, h)] + 4.0 * vdata[corrind(x + 1, y, w, h)] + vdata[corrind(x + 1, y + 1, w, h)]
+		- (vdata[corrind(x - 1, y - 1, w, h)] + 4.0 * vdata[corrind(x - 1, y, w, h)] + vdata[corrind(x - 1, y + 1, w, h)]);*/
+
+}
+struct IplImage *sobel(struct IplImage *frame)
+{
+	int x, y, w, h;
+	unsigned char thres;
+	struct IplImage *res;
+
+	h = frame->height;
+	w = frame->width;
+	res = ipl_creatimg(w, h, IPL_GRAY_MODE);
+  	thres = otsu(frame);
+	bzero(res->data, w * h);	
+  
+	for(y = 1; y < h - 1; y++){
+		for(x = 1; x < w - 1; x++) {
+			double gx, gy, gr;
+			
+			grad(frame->data, w, h, x, y, &gx, &gy);
+
+			gr = sqrt(gx * gx + gy * gy);
+      
+			if (gr >= thres) {
+				res->data[y * w + x] = 255;
+			}   
+			
+		}
+	}
+
+	return res;
+}
+
+/*
 void hough(struct IplImage *img)
 {
+
+	double *binimg = malloc(sizeof(double) * img->width * img->height);
+	binimg = sobel(img, otsu(img));	
+	
+		
 
 }*/

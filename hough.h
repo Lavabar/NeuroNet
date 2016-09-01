@@ -3,6 +3,6 @@
 
 #include "iplimage.h"
 
-unsigned char otsu(struct IplImage *img);
+struct IplImage *sobel(struct IplImage *img);
 
 #endif
