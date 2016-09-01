@@ -16,7 +16,7 @@
 
 #define SAMPLE_HEIGHT 20
 #define SAMPLE_WIDTH 50
-#define SCALE_RATE 0.7
+#define SCALE_RATE 0.70
 
 static double *getdata(struct IplImage *img, int sx, int sy, int dw, int dh)
 {
@@ -49,8 +49,8 @@ int neurowork(struct IplImage *frame)
 	while (img->width >= 50 && img->height >= 20) {
 		double isgun_val, isnotgun_val;
 		//printf("w=%d h=%d\n", img->width, img->height);
-		for (y = 0; y < img->height - 20; y += 20) {
-			for (x = 0; x < img->width - 50; x += 50) {
+		for (y = 0; y < img->height - 20; y+=20) {
+			for (x = 0; x < img->width - 50; x+=50) {
 				data = getdata(img, x, y, 50, 20);
 				gun_out = netfpass(gun_net, data);
 				notgun_out = netfpass(notgun_net, data);

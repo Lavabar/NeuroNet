@@ -1,9 +1,9 @@
 CC=gcc
-NETSRCS=netcreat.c net_errno.c netpass.c netfile.c edge_detect.c iplimage.c draw.c iplvideo.c neurowork.c
+NETSRCS=netcreat.c net_errno.c netpass.c netfile.c edge_detect.c iplimage.c draw.c iplvideo.c neurowork.c hough.c
 CFLAGS=-Wall -g `pkg-config --libs gtk+-3.0` -lm -lpng12 `pkg-config --cflags gtk+-3.0` 
 NETOBJS=$(NETSRCS:.c=.o)
 
-all: test_netcreat test_fpass test_netfile test_main guntrain notguntrain beta_main main test_net #bigmain
+all: test_netcreat test_fpass test_netfile test_main guntrain notguntrain beta_main main test_net test_hough #bigmain
 
 test_fpass: $(NETOBJS) test_fpass.o
 	$(CC) $(CFLAGS) -o test_fpass test_fpass.o $(NETOBJS)
@@ -35,6 +35,9 @@ main: $(NETOBJS) main.o
 test_net: $(NETOBJS) test_net.o
 	$(CC) $(CFLAGS) -o test_net test_net.o $(NETOBJS)
 
+test_hough: $(NETOBJS) test_hough.o
+	$(CC) $(CFLAGS) -o test_hough test_hough.o $(NETOBJS)
+
 test_fpass.o:test_fpass.c
 	$(CC) $(CFLAGS) -c test_fpass.c	
 
@@ -65,6 +68,9 @@ main.o:main.c
 test_net.o:test_net.c
 	$(CC) $(CFLAGS) -c test_net.c
 
+test_hough.o:test_hough.c
+	$(CC) $(CFLAGS) -c test_hough.c
+
 neurowork.o: neurowork.c
 	$(CC) $(CFLAGS) -c neurowork.c
 
@@ -92,5 +98,8 @@ iplvideo.o: iplvideo.c
 draw.o: draw.c
 	$(CC) $(CFLAGS) -c draw.c
 
+hough.o: hough.c
+	$(CC) $(CFLAGS) -c hough.c
+
 clean:
-	rm test_netcreat test_fpass test_netfile test_main train beta_main main test_net *.o #bigmain
+	rm test_netcreat test_fpass test_netfile test_main train beta_main main test_net test_hough *.o #bigmain
