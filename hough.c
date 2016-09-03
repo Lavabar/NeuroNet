@@ -4,6 +4,9 @@
 #include "iplimage.h"
 #include "ipldefs.h"
 
+#define N_NEW_CLR 256
+#define MEASURE_ERROR (N_NEW_CLR/4)
+
 /*unsigned char otsu(struct IplImage *img)
 {
 	unsigned char min, max, thres;
@@ -115,6 +118,17 @@ static unsigned char otsu(struct IplImage *img)
 	return threshold + min;
 }
 
+static void quantization(struct IplImage *img)
+{
+	int i, noldclr, nnewclr;
+	noldclr = 256;
+	nnewclr = N_NEW_CLR;
+
+	for (i = 0; i < img->width * img->height; i++)
+		img->data[i] /= (noldclr / nnewclr); 
+	 
+}
+
 static int corrind(int x, int y, int w, int h)
 {
 	int x1, y1;
@@ -142,12 +156,12 @@ static void grad(const unsigned char *vdata, int w, int h, int x, int y, double 
 		- (vdata[corrind(x - 1, y - 1, w, h)] + 4.0 * vdata[corrind(x - 1, y, w, h)] + vdata[corrind(x - 1, y + 1, w, h)]);*/
 
 }
-struct IplImage *sobel(struct IplImage *frame)
+static double *sobel(struct IplImage *frame, unsigned char thres)
 {
 	int x, y, w, h;
-	unsigned char thres;
-	struct IplImage *res;
+	double *res;
 
+	//quantization(frame);
 	h = frame->height;
 	w = frame->width;
 	res = ipl_creatimg(w, h, IPL_GRAY_MODE);
@@ -161,9 +175,9 @@ struct IplImage *sobel(struct IplImage *frame)
 			grad(frame->data, w, h, x, y, &gx, &gy);
 
 			gr = sqrt(gx * gx + gy * gy);
-      
-			if (gr >= thres) {
-				res->data[y * w + x] = 255;
+
+			if (gr >= (thres + MEASURE_ERROR)) {
+				res->data[y * w + x] = N_NEW_CLR - 1;
 			}   
 			
 		}
@@ -172,13 +186,13 @@ struct IplImage *sobel(struct IplImage *frame)
 	return res;
 }
 
-/*
+
 void hough(struct IplImage *img)
 {
 
 	double *binimg = malloc(sizeof(double) * img->width * img->height);
 	binimg = sobel(img, otsu(img));	
+	int *accmas = malloc(sizeof(int) * img->width * img->height);	
 	
-		
 
-}*/
+}
