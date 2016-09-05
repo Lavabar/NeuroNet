@@ -1,8 +1,6 @@
-#ifndef HOUGH_H
-#define HOUGH_H
+#ifndef NET_HOUGH_H
+#define NET_HOUGH_H
 
-#include "iplimage.h"
-
-struct IplImage *sobel(struct IplImage *img);
+double *hough(struct IplImage *img);
 
 #endif

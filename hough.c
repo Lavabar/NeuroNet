@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <string.h>
 #include "iplimage.h"
 #include "ipldefs.h"
 
@@ -156,43 +157,63 @@ static void grad(const unsigned char *vdata, int w, int h, int x, int y, double 
 		- (vdata[corrind(x - 1, y - 1, w, h)] + 4.0 * vdata[corrind(x - 1, y, w, h)] + vdata[corrind(x - 1, y + 1, w, h)]);*/
 
 }
-static double *sobel(struct IplImage *frame, unsigned char thres)
+double *hough(struct IplImage *frame)
 {
-	int x, y, w, h;
-	double *res;
-
+	int x, y, r, w, h, maxrad;
+	double diag;
+	double *accarr; 
+	unsigned char thres;
 	//quantization(frame);
 	h = frame->height;
 	w = frame->width;
-	res = ipl_creatimg(w, h, IPL_GRAY_MODE);
+	diag = sqrt(w * w + h * h);
+	maxrad = h;
   	thres = otsu(frame);
-	bzero(res->data, w * h);	
+	accarr = malloc(sizeof(double) * w * h * maxrad);	
+
+	bzero(accarr, w * h * maxrad);
   
-	for(y = 1; y < h - 1; y++){
-		for(x = 1; x < w - 1; x++) {
+	for(y = 0; y < h; y++){
+		for(x = 0; x < w; x++) {
 			double gx, gy, gr;
-			
+			double theta;
+			int x0, y0;
 			grad(frame->data, w, h, x, y, &gx, &gy);
 
+			theta = atan2(gy, gx);
+				
 			gr = sqrt(gx * gx + gy * gy);
 
 			if (gr >= (thres + MEASURE_ERROR)) {
-				res->data[y * w + x] = N_NEW_CLR - 1;
+				for (r = 100; r < maxrad; r++) {
+					x0 = x - r * cos(theta);
+					y0 = y - r * sin(theta);
+					if (x0 >= 0 && y0 >= 0 && x0 < w && y0 < h)
+						accarr[(y0 * h + x0) * r]++;
+				}
 			}   
 			
 		}
 	}
-
-	return res;
-}
-
-
-void hough(struct IplImage *img)
-{
-
-	double *binimg = malloc(sizeof(double) * img->width * img->height);
-	binimg = sobel(img, otsu(img));	
-	int *accmas = malloc(sizeof(int) * img->width * img->height);	
 	
+	//double avr = 0.0;
+	double max;
+	max = 0;
+	for(r = 10; r < maxrad; r++)
+		for (y = 0; y < h; y++)
+			for (x = 0; x < w; x++)
+				if (accarr[(y * w + x) * r] >= max)
+					max = accarr[(y * w + x) * r];
+//				avr += accarr[(y * w + x) * r];
+//	avr /= (w * h * (maxrad - 10));
+//	printf("%lf\n", avr);
 
+	for(r = 100; r < maxrad; r++)
+		for (y = 0; y < h; y++)
+			for (x = 0; x < w; x++)
+				if (accarr[(y * w + x) * r] < max)
+					accarr[(y * w + x) * r] = 0.0;
+
+
+	return accarr;
 }
