@@ -43,18 +43,18 @@ static int camera_shoot(struct IplImage *img, GdkPixbuf *pixbuf)
 	g_assert (gdk_pixbuf_get_colorspace (pixbuf) == GDK_COLORSPACE_RGB);
   	g_assert (gdk_pixbuf_get_bits_per_sample (pixbuf) == 8);
   	g_assert (!gdk_pixbuf_get_has_alpha (pixbuf));
-  	g_assert (img->nchans == 3);
+  	//g_assert (img->nchans == 3);
 
 	for (y = 0; y < img->height; y++)
 		for (x = 0; x < img->width; x++) {
 			unsigned char r, g, b;
-			r = img->data[img->nchans * (y * img->width + x) + 0];
-			g = img->data[img->nchans * (y * img->width + x) + 1];
-			b = img->data[img->nchans * (y * img->width + x) + 2];
+			r = img->data[img->nchans * (y * img->width + x)];
+			g = img->data[img->nchans * (y * img->width + x)];
+			b = img->data[img->nchans * (y * img->width + x)];
 			rowstride = gdk_pixbuf_get_rowstride (pixbuf);
   			pixels = gdk_pixbuf_get_pixels (pixbuf);
 
-  			p = pixels + y * rowstride + x * img->nchans;
+  			p = pixels + y * rowstride + x * 3;
   			p[0] = r;
   			p[1] = g;
   			p[2] = b;
@@ -95,7 +95,7 @@ static void activate (GtkApplication* app, gpointer user_data)
 	f = 0;
 	start = 0;
 	end = 0;
-	if ((dev1 = ipl_opendev(0, IPL_RGB_MODE)) == NULL)
+	if ((dev1 = ipl_opendev(0, IPL_GRAY_MODE)) == NULL)
 		printf("error while creating device 0\n");
 	if (ipl_setparams(dev1, 320, 240, IPL_FORCE_SCALE_OFF) < 0) {
 		fprintf(stderr, "error on changing cam params\n");

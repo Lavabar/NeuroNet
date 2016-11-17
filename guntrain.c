@@ -48,13 +48,13 @@ static double *getdata(struct IplImage *img)
 	data = (double *)malloc(sizeof(double) * img->width * img->height);
 	for (y = 0; y < img->height; y++)
 		for (x = 0; x < img->width; x++) {
-			unsigned char r, g, b, max;
-			r = img->data[img->nchans * (y * img->width + x) + 0];
-			g = img->data[img->nchans * (y * img->width + x) + 1];
+			unsigned char px;
+			px = img->data[img->nchans * (y * img->width + x)];
+			/*g = img->data[img->nchans * (y * img->width + x) + 1];
 			b = img->data[img->nchans * (y * img->width + x) + 2];
 			max = (r > g)? r : g;
-			max = (b > max)? b : max;
-			data[y * img->width + x] = (double)max / 255.0 * 2.0 - 1.0;
+			max = (b > max)? b : max;*/
+			data[y * img->width + x] = (double)px / 255.0 * 2.0 - 1.0;
 		}
 	return data;
 }
@@ -80,7 +80,7 @@ int main(int argc, char** argv)
 	for (i = 0; i < CNTGUNS; i++) {
 		bzero(name, 256);
 		sprintf(name, "%s/%d.png", GUNS_PATH, i);
-		if ((img = ipl_readimg(name, IPL_RGB_MODE)) == NULL) {
+		if ((img = ipl_readimg(name, IPL_GRAY_MODE)) == NULL) {
 			fprintf(stderr, "error reading image: %s\n", name);
 			return 1;
 		}

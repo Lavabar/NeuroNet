@@ -26,13 +26,13 @@ static double *getdata(struct IplImage *img, int sx, int sy, int dw, int dh)
 	data = (double *)malloc(sizeof(double) * dw * dh);
 	for (y = sy, y1 = 0; y < sy + dh; y++, y1++)
 		for (x = sx, x1 = 0; x < sx + dw; x++, x1++) {
-			unsigned char r, g, b, max;
-			r = img->data[img->nchans * (y * img->width + x) + 0];
-			g = img->data[img->nchans * (y * img->width + x) + 1];
+			unsigned char px;
+			px = img->data[img->nchans * (y * img->width + x)];
+			/*g = img->data[img->nchans * (y * img->width + x) + 1];
 			b = img->data[img->nchans * (y * img->width + x) + 2];
 			max = (r > g)? r : g;
-			max = (b > max)? b : max;
-			data[y1 * dw + x1] = (double)max / 255.0 * 2.0 - 1.0;
+			max = (b > max)? b : max;*/
+			data[y1 * dw + x1] = (double)px / 255.0 * 2.0 - 1.0;
 		}
 	return data;
 }
@@ -44,7 +44,8 @@ int neurowork(struct IplImage *frame)
 	int k = 0;
 
 	double *gun_out, *notgun_out, *data;
-	img = ipl_cloneimg(frame);
+	if((img = ipl_cloneimg(frame)) == NULL)
+		goto exit_failure;
 
 	while (img->width >= 50 && img->height >= 20) {
 		double isgun_val, isnotgun_val;

@@ -37,35 +37,35 @@ void drawLine(struct IplImage *img, int x1, int y1, int x2, int y2)
 void drawRectangle(struct IplImage *img, int x, int y, int x2, int y2)
 {
 	int x1, y1;
-	unsigned char r, g, b;
+	//unsigned char r, g, b;
 /*	r = rand() % 255;
 	g = rand() % 255;
-	b = rand() % 255; */
-	r = 255;
-	g = 255;
-	b = 0;
+	b = rand() % 255; 
+	r = 0;
+	g = 0;
+	b = 0;*/
 //	printf("(%d %d) (%d %d)\n", x, y, x2, y2);
 	x1 = x;
 	for (y1 = y; y1 < y2; y1++) {
-		img->data[img->nchans * (y1 * img->width + x1) + 0] = r;
-		img->data[img->nchans * (y1 * img->width + x1) + 1] = g;
-		img->data[img->nchans * (y1 * img->width + x1) + 2] = b;
+		img->data[img->nchans * (y1 * img->width + x1) + 0] = 0;
+		//img->data[img->nchans * (y1 * img->width + x1) + 1] = g;
+		//img->data[img->nchans * (y1 * img->width + x1) + 2] = b;
 	}
 	for (x1 = x; x1 < x2; x1++) {
-		img->data[img->nchans * (y1 * img->width + x1) + 0] = r;
-		img->data[img->nchans * (y1 * img->width + x1) + 1] = g;
-		img->data[img->nchans * (y1 * img->width + x1) + 2] = b;
+		img->data[img->nchans * (y1 * img->width + x1) + 0] = 0;
+		//img->data[img->nchans * (y1 * img->width + x1) + 1] = g;
+		//img->data[img->nchans * (y1 * img->width + x1) + 2] = b;
 	}
 	for (y1 = y; y1 < y2; y1++) {
-		img->data[img->nchans * (y1 * img->width + x1) + 0] = r;
-		img->data[img->nchans * (y1 * img->width + x1) + 1] = g;
-		img->data[img->nchans * (y1 * img->width + x1) + 2] = b;
+		img->data[img->nchans * (y1 * img->width + x1) + 0] = 0;
+		//img->data[img->nchans * (y1 * img->width + x1) + 1] = g;
+		//img->data[img->nchans * (y1 * img->width + x1) + 2] = b;
 	}
 	y1 = y;
 	for (x1 = x; x1 < x2; x1++) {
-		img->data[img->nchans * (y1 * img->width + x1) + 0] = r;
-		img->data[img->nchans * (y1 * img->width + x1) + 1] = g;
-		img->data[img->nchans * (y1 * img->width + x1) + 2] = b;
+		img->data[img->nchans * (y1 * img->width + x1) + 0] = 0;
+		//img->data[img->nchans * (y1 * img->width + x1) + 1] = g;
+		//img->data[img->nchans * (y1 * img->width + x1) + 2] = b;
 	}
 
 
