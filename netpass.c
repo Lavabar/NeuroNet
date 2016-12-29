@@ -93,7 +93,7 @@ int netbpass(struct neuronet *net, double *inp, double *out, double *target, dou
 		}
 
 	}
-
+	free(errors - ne + 1);
 	return 0;
 
 free_errors:

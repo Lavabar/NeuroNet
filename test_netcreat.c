@@ -1,12 +1,13 @@
 #include <stdio.h>
 #include "netcreat.h"
 #include "net_structs.h"
+#include "netfile.h"
 
 int main()
 {
-	int nl = 2;
-	int nn[] = {3, 1};
-	int ninp = 2;
+	int nl = 5;
+	int nn[] = {400, 200, 100, 50, 10};
+	int ninp = 1024;
 	double *w;
 	struct neuronet *net;
 	
@@ -17,15 +18,7 @@ int main()
 		return 1;
 	}
 	w = net->w;
-	for (i = 0; i < nl; i++) {
-		for(j = 0; j < net->nn[i]; j++) {
-			for(k = 0; k < net->nw[i]; k++)
-				printf("%lf|", *w++);
-			printf(" ");
-		}
-		printf("\n");
-	}
-
+	nettofile(net, "/home/user/NeuroNet/neuro.data");
 //	printf("w=%x\n", net->w); 
 
 	return 0; 

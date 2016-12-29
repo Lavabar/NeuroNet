@@ -13,18 +13,18 @@
 #include "edge_detect.h"
 
 #define NEURO_PATH "/home/user/NeuroNet/neuro.data"
-#define GUNS_PATH "/home/user/NeuroNet/guns"
-#define NOTGUNS_PATH "/home/user/NeuroNet/notguns"
 
-#define CNTGUNS 156	
-#define CNTNOTGUNS 141 
-#define TOTAL (CNTGUNS + CNTNOTGUNS)
-#define SAMPLE_SIZE 1000
-#define ETA 0.01
+#define SAMPLE_PATH "/home/user/ConvNet/cifar/data_batch_"
+#define SAMPLE_CNT 50000	
+#define SAMPLE_WIDTH 32
+#define SAMPLE_HEIGHT 32
+#define SAMPLE_SIZE (SAMPLE_WIDTH * SAMPLE_HEIGHT)
+
+#define ETA 0.005
 
 struct sample {
 	double *data;
-	double target[2];
+	double target[10];
 };
 
 static void shufflearr(int *pathidx, int len)
@@ -64,56 +64,56 @@ static double *getdata(struct IplImage *img)
 
 int main(int argc, char** argv)
 {
-	int nl = 2;
-	int nn[] = {200, 2};
+	int nl = 5;
+	int nn[] = {400, 200, 100, 50, 10};
 	double *out;
 	
 	struct sample *examples;
 	int *idxes;	
-	
-	int i;
+	FILE *f;
+	int i, j, k, g, t, u;
 
 	char name[256];
-	struct IplImage *img;
 	struct neuronet *net = malloc(sizeof(struct neuronet));
 	if (netfromfile(net, NEURO_PATH) == -1) {
 		fprintf(stderr, "Can not open file %s: %s\n", strerror(errno), NEURO_PATH);
 		goto exit_failure;
 	}
+	//printf("%d\n", net->nl);
 
-
-	examples = (struct sample *)malloc(sizeof(struct sample) * TOTAL);
-	idxes = (int *)malloc(sizeof(int) * TOTAL);	
+	examples = (struct sample *)malloc(sizeof(struct sample) * SAMPLE_CNT);
+	idxes = (int *)malloc(sizeof(int) * SAMPLE_CNT);	
 	
-	for (i = 0; i < CNTGUNS; i++) {
+	u = 0;	
+	for (j = 0, t = 0; j < 5; j++) {
 		bzero(name, 256);
-		sprintf(name, "%s/%d.png", GUNS_PATH, i);
-		if ((img = ipl_readimg(name, IPL_RGB_MODE)) == NULL) {
-			fprintf(stderr, "error reading image: %s\n", name);
-			return 1;
-		}
-	
-		(examples + i)->data = getdata(img);
-		(examples + i)->target[0] = 1.0;	
-		(examples + i)->target[1] = 0.0;	
+		sprintf(name, "%s%d.bin", SAMPLE_PATH, j + 1);
+		f = fopen(name, "r");
+		for (i = 0; i < (SAMPLE_CNT / 5); i++, t++) {
+			unsigned char n;
+			unsigned char *a;
+			struct IplImage *img;
+			img = ipl_creatimg(SAMPLE_WIDTH, SAMPLE_HEIGHT, IPL_RGB_MODE);
+			fread(&n, sizeof(unsigned char), 1, f);
+			a = (unsigned char *)malloc(sizeof(unsigned char) * SAMPLE_SIZE * img->nchans);
+			if (fread(a, sizeof(unsigned char), SAMPLE_SIZE * img->nchans, f) < SAMPLE_SIZE * img->nchans) {
+				printf("not read\n");
+				exit(1);
+			}
+			for (k = 0, g = 0; k < SAMPLE_SIZE; k++, g += 3) {
+				img->data[g + 0] = a[k];
+				img->data[g + 1] = a[k + 1024];
+				img->data[g + 2] = a[k + 2048];
+			}
+			bzero((examples + t)->target, 10);
+			(examples + t)->data = getdata(img);
+			(examples + t)->target[n] = 1.0;	
 		
-		*(idxes + i) = i;
-		ipl_freeimg(&img);
-	}
-	for (i = CNTGUNS; i < TOTAL; i++) {
-		bzero(name, 256);
-		sprintf(name, "%s/%d.png", NOTGUNS_PATH, i - CNTGUNS);
-		if ((img = ipl_readimg(name, IPL_RGB_MODE)) == NULL) {
-			fprintf(stderr, "error reading image : %s\n", name);
-			return 1;
+			*(idxes + t) = t;
+			ipl_freeimg(&img);
+			free(a);
 		}
-	
-		(examples + i)->data = getdata(img);
-		(examples + i)->target[0] = 0.0;	
-		(examples + i)->target[1] = 1.0;	
-
-		*(idxes + i) = i;
-		ipl_freeimg(&img);
+		fclose(f);
 	}
 
 	/*for(i = 0; i < TOTAL; i++)
@@ -131,15 +131,15 @@ int main(int argc, char** argv)
 	do { //while(error > 0.018/*isguncor != CNTGUNS || notguncor != CNTNOTGUNS*/) {
 		//isguncor = isgunincor = notguncor = notgunincor = 0;
 		error = 0;
-		for (i = 0; i < TOTAL; i++) {
+		for (i = 0; i < SAMPLE_CNT; i++) {
 			int idx;
 			double isgun_val, isnotgun_val;
 			idx = *(idxes + i);
-			out = netfpass(net, (examples + idx)->data);
-
-			isgun_val = *(out + net->total_nn - 2);		
-			isnotgun_val = *(out + net->total_nn - 1);		
+			out = netfpass(net, (examples + idx)->data);			
 			
+			/*isgun_val = *(out + net->total_nn - 2);		
+			isnotgun_val = *(out + net->total_nn - 1);		
+
 			//error += abs(((*((examples + idx)->target) == 1)? isgun_val : isnotgun_val) - *((examples + idx)->target));
 			
 			if (*((examples + idx)->target) == 1.0)
@@ -148,7 +148,7 @@ int main(int argc, char** argv)
 				error += 1.0 - isnotgun_val;
 
 			error += fabs((examples + idx)->target[0] - isgun_val) + fabs((examples + idx)->target[1] - isnotgun_val);
-
+			*/
 
 			//printf("idx = %d    tar1 = %lf   tar2 = %lf\n", idx,*((examples + idx)->target), *((examples + idx)->target + 1));
 			/*if (*((examples + idx)->target) == 1.0 && isgun_val >= isnotgun_val)
@@ -161,6 +161,10 @@ int main(int argc, char** argv)
 				isgunincor++;
 			*/
 			netbpass(net, (examples + idx)->data, out, (examples + idx)->target, ETA);
+			out += net->total_nn - 11;
+			for (j = 0; j < net->nn[nl - 1]; j++)
+				error += fabs(out[j] - (examples + idx)->target[j]);
+			out -= net->total_nn - 11;
 			//getchar();	
 			free(out);
 			/*w = net->w;
@@ -174,12 +178,12 @@ int main(int argc, char** argv)
 			}*/
 			
 		}
-		shufflearr(idxes, TOTAL);
-		printf("error = %lf\n", (error / TOTAL / 2));
+		shufflearr(idxes, SAMPLE_CNT);
+		printf("error = %lf\n", (error / SAMPLE_CNT / 10));
 		//printf("isguncor = %d isgunincor = %d    notguncor = %d  notgunincor = %d\n", isguncor, isgunincor, notguncor, notgunincor);
 		nettofile(net, NEURO_PATH);
 
-	} while((error / TOTAL / 2) > 0.02);
+	} while((error / SAMPLE_CNT / 10) > 0.1);
 	
 
 		

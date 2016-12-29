@@ -1,171 +1,183 @@
-#include <errno.h>
-#include <float.h>
-#include <stdlib.h>
 #include <stdio.h>
-#include <string.h>
+#include <stdlib.h>
+#include <strings.h>
 #include <math.h>
-#include <png.h>
-#include "iplimage.h"
-#include "ipldefs.h"
-#include <time.h>
-#include "net_structs.h"
-#include "netcreat.h"
 #include "netpass.h"
 #include "netfile.h"
-#include "edge_detect.h"
+#include "iplimage.h"
+#include "ipldefs.h"
+#include "netcreat.h"
+#include <time.h>
 
-#define PATH "/home/vadim/newsym"
-#define NETPATH "/home/vadim/libipl/neuro.data"
-#define CNTNAMES 23
-#define CNT0 134
-#define CNT1 68
-#define CNT2 49
-#define CNT3 78
-#define CNT4 53
-#define CNT5 61
-#define CNT6 67
-#define CNT7 63
-#define CNT8 73
-#define CNT9 63
-#define CNTA 90
-#define CNTB 58
-#define CNTC 49
-#define CNTE 61
-#define CNTH 54
-#define CNTK 62
-#define CNTM 73
-#define CNTO 62
-#define CNTP 58
-#define CNTT 51
-#define CNTX 44
-#define CNTY 47
-#define CNTBAD 227
-#define TOTAL CNT0 + CNT1 + CNT2 + CNT3 + CNT4 + CNT5 + CNT6 + CNT7 + CNT8 + CNTA + CNTB + CNTC + CNTE + CNTH + CNTK + CNTM + CNTO + CNTP + CNTT + CNTX + CNTY + CNTBAD
-#define SAMPLE_SIZE 140
+#define NEURO_PATH "/home/user/NeuroNet/neuro.data"
 
-int imgcount[] =  {CNT0, CNT1, CNT2, CNT3, CNT4, CNT5, CNT6, CNT7, CNT8, CNT9, CNTA, CNTB, CNTC, CNTE, CNTH, CNTK, CNTM, CNTO, CNTP, CNTT, CNTX, CNTY, CNTBAD};
-char *names[] = {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", "c", "e", "h", "k", "m", "o", "p", "t", "x", "y", "bad"};
+#define SAMPLE_MARK 5 //dog
+#define SAMPLE_PATH "/home/user/ConvNet/cifar/test_batch.bin"
+#define SAMPLE_CNT 10000	
+#define SAMPLE_WIDTH 32
+#define SAMPLE_HEIGHT 32
+#define SAMPLE_SIZE (SAMPLE_WIDTH * SAMPLE_HEIGHT)
 
-struct example {
+#define ETA 0.05
+
+#define N_CONV_LAYERS 1
+#define N_KERNELS 3   
+#define KERNEL_WIDTH 7
+
+struct sample {
 	double *data;
-	double *target;
+	double target[2];
 };
 
-int nn[] = {25, CNTNAMES};
-int nw = SAMPLE_SIZE;
-int nl = 2;
-struct example *examples;
-
-static void shufflearr(int *pathidx, int len)
+static double *getdata(struct IplImage *img)
 {
-	int p1;
-	for (p1 = 0; p1 < len; ++p1) {
-		int p2;
-		int tmp;
-		
-		p2 = rand() % len;
-		tmp = pathidx[p1];
-
-		pathidx[p1] = pathidx[p2];
-		pathidx[p2] = tmp;
-	}
+	int x, y;
+	double *data;
+	
+	data = (double *)malloc(sizeof(double) * img->width * img->height);
+	for (y = 0; y < img->height; y++)
+		for (x = 0; x < img->width; x++) {
+			unsigned char r, g, b, max;
+			r = img->data[img->nchans * (y * img->width + x) + 0];
+			g = img->data[img->nchans * (y * img->width + x) + 1];
+			b = img->data[img->nchans * (y * img->width + x) + 2];
+			max = (r > g)? r : g;
+			max = (b > max)? b : max;
+			data[y * img->width + x] = (double)max / 255.0 * 2.0 - 1.0;
+		}
+	return data;
 }
 
-void train()
-{
-	double eta = 0.5/*, minerr = INFINITY*/;
-	struct neuronet net;
-	int i, j;
-	double **out, minerr = DBL_MAX;
-	int *idxes;
-	int correct[CNTNAMES], incorrect[CNTNAMES];
-
-	idxes = (int *)malloc(sizeof(int *) * (TOTAL));	
-    net = netcreat(nl, nn, nw); 
-
-	for (i = 0; i < (TOTAL); i++)
-		idxes[i] = i;
-	//first output for face, second for nonface; 	
-	do {
-		double newerr = 0.0;
-		for (i = 0; i < CNTNAMES; i++) 
-			incorrect[i] = correct[i] = 0;
-			
-		for (i = 0; i < (TOTAL); i++) {
-			int idx, maxid;
-			double maxval;
-
-			idx = idxes[i];
-			out = netfpass(&net, examples[idx].data);
-			netbpass(&net, out, examples[i].target, eta);
-		
-			maxid = 0;
-			maxval = out[net.nl - 1][0];
-			for (j = 1; j < CNTNAMES; j++)
-				if (out[net.nl - 1][j] > maxval || (fabs(out[net.nl - 1][j] - examples[i].target[j] < DBL_EPSILON) && examples[i].target[j] == 1.0)) {
-					maxval = out[net.nl - 1][j];
-					maxid = j;
-				}
-
-			if (examples[i].target[maxid] == 1.0)
-				correct[maxid]++;
-			else
-				incorrect[maxid]++;
-			
-			for (j = 0; j < nl; j++)
-				free(out[j]);
-			free(out);
-		}
-
-		for (i = 0; i < CNTNAMES; i++) {
-			printf("%s=%d/%d ", names[i], correct[i], incorrect[i]);
-			newerr += (double)incorrect[i];
-		}
-		newerr /= (double)TOTAL;
-		printf("err=%lf\n", newerr);
-		if (newerr < minerr) {
-			nettofile(&net, NETPATH);
-			minerr = newerr;
-		}
-		shufflearr(idxes, (TOTAL));
-	} while(1);
-}
 int main()
 {
+	FILE *f;
 	char name[256];
-	struct IplImage *syms[CNTNAMES][TOTAL];
-	int count = 0;
-	int i, j, k;
+	double *out;
+	struct neuronet *net;
+	struct sample *examples;
+	int *idxes;
+	int i, j, k, g, t, u;
+	int corr, incorr;
 
-	examples = (struct example *)malloc(sizeof(struct example) * (TOTAL));
-	
-	for (i = 0; i < CNTNAMES; i++)
-		for (j = 0; j < imgcount[i]; j++) {
-			bzero(name, 256);
-			sprintf(name, "%s/%s/%d.png", PATH, names[i], j);
-			
-			if ((syms[i][j] = ipl_readimg(name, IPL_GRAY_MODE))== NULL) {
-				printf("faces: error on %s: %s\n", name, strerror(errno));
-				exit(1);
-			}
-		}
-
-	for (i = 0; i < CNTNAMES; i++) {
-		for (j = 0; j < imgcount[i]; j++) {
-			examples[count].target = (double *)calloc(nn[nl - 1], sizeof(double));
-			examples[count].data = (double *)malloc(sizeof(double) * syms[i][j]->width * syms[i][j]->height);
-			examples[count].target[i] = 1.0;
-			for (k = 0; k < syms[i][j]->width * syms[i][j]->height; k++) {
-				examples[count].data[k] = syms[i][j]->data[k] / 255.0 * 2.0 - 1.0;
-			}
-			count++;
-		}
+	net = (struct neuronet *)malloc(sizeof(struct neuronet));
+	/*
+	int nl = 1;
+	int nn[] = {2};	
+	if((cnet = cnetcreat(N_CONV_LAYERS, N_KERNELS, KERNEL_WIDTH)) == NULL) {
+		fprintf(stderr, "error in init convnet\n");
+		goto exit_failure;
 	}
-	
+	net = netcreat(nl, nn, ((SAMPLE_WIDTH - ((KERNEL_WIDTH / 2) * 2)) / 2) * ((SAMPLE_HEIGHT - ((KERNEL_WIDTH / 2) * 2)) / 2) * N_KERNELS);
+	nettofile(net, cnet, NEURO_PATH);
+	getchar();*/
 
-	printf("reading done\n");
-	train();
-	printf("train done\n");
-	getchar();	
+	if (netfromfile(net, NEURO_PATH) == -1) {
+		fprintf(stderr, "error reading nets\n");
+		goto exit_failure;
+	}
+
+	examples = (struct sample *)malloc(sizeof(struct sample) * SAMPLE_CNT);
+	idxes = (int *)malloc(sizeof(int) * SAMPLE_CNT);	
+	u = 0;	
+	bzero(name, 256);
+	sprintf(name, "%s", SAMPLE_PATH);
+	f = fopen(name, "r");
+	for (i = 0; i < (SAMPLE_CNT); i++) {
+		unsigned char n;
+		unsigned char *a;
+		struct IplImage *img;
+		img = ipl_creatimg(SAMPLE_WIDTH, SAMPLE_HEIGHT, IPL_RGB_MODE);
+		fread(&n, sizeof(unsigned char), 1, f);
+		a = (unsigned char *)malloc(sizeof(unsigned char) * SAMPLE_SIZE * img->nchans);
+		if (fread(a, sizeof(unsigned char), SAMPLE_SIZE * img->nchans, f) < SAMPLE_SIZE * img->nchans) {
+			printf("not read\n");
+			exit(1);
+		}
+		for (k = 0, g = 0; k < SAMPLE_SIZE; k++, g += 3) {
+			img->data[g + 0] = a[k];
+			img->data[g + 1] = a[k + 1024];
+			img->data[g + 2] = a[k + 2048];
+		}
+		(examples + i)->data = getdata(img);
+		if (n == SAMPLE_MARK) {
+			u++;
+			(examples + i)->target[0] = 1.0;	
+			(examples + i)->target[1] = 0.0;
+		} else {
+			(examples + i)->target[0] = 0.0;	
+			(examples + i)->target[1] = 1.0;
+		}
+		*(idxes + i) = i;
+		ipl_freeimg(&img);
+		free(a);
+	}
+	fclose(f);
+	int x, y;
+	
+	/*for (y = 0; y < imgs->h; y++) {
+		for (x = 0; x < imgs->w; x++)
+			printf("%.2lf ", imgs[0].data[y * imgs->w + x]);
+		printf("\n");
+	}*/
+	printf("real_val =  %d\nreal_inval = %d\n", u, (SAMPLE_CNT - u));
+	double error;
+	time_t start, end;
+	start = time(NULL);
+		error = 0;
+		corr = 0;
+		for (i = 0; i < SAMPLE_CNT; i++) {
+			int idx;
+			double val, inval;
+			idx = *(idxes + i);
+			out = netfpass(net, (examples + idx)->data);
+
+			val = *(out + net->total_nn - 2);		
+			inval = *(out + net->total_nn - 1);		
+			if ((examples + i)->target[0] == 1.0 && val >= 0.7 && inval <= 0.3)
+				corr++;
+			else if ((examples + i)->target[0] == 0.0 && val <= 0.3 && inval >= 0.7)
+				corr++;	
+			//error += abs(((*((examples + idx)->target) == 1)? isgun_val : isnotgun_val) - *((examples + idx)->target));
+			
+			if (*((examples + idx)->target) == 1.0)
+				error += 1.0 - val;
+			if (*((examples + idx)->target) == 0.0)
+				error += 1.0 - inval;
+
+			error += fabs((examples + idx)->target[0] - val) + fabs((examples + idx)->target[1] - inval);
+
+
+			//printf("idx = %d    tar1 = %lf   tar2 = %lf\n", idx,*((examples + idx)->target), *((examples + idx)->target + 1));
+			/*ictf (*((examples + idx)->target) == 1.0 && isgun_val >= isnotgun_val)
+				isguncor++;
+			else if (*((examples + idx)->target) == 1.0 && isgun_val < isnotgun_val)
+				notgunincor++;
+			else if (*((examples + idx)->target) == 0.0 && isnotgun_val >= isgun_val)
+				notguncor++;
+			else if (*((examples + idx)->target) == 0.0 && isnotgun_val < isgun_val)
+				isgunincor++;
+			*/
+					//getchar();	
+			free(out);
+			/*w = net->w;
+			for (i = 0; i < net->nl; i++) {
+				for(j = 0; j < net->nn[i]; j++) {
+					for(k = 0; k < net->nw[i]; k++)
+						printf("%lf|", *w++);
+					printf(" ");
+				}
+				printf("\n");
+			}*/
+			
+		}
+		printf("error = %lf, corr = %d\n", (error / SAMPLE_CNT / 2), corr);
+		//printf("isguncor = %d isgunincor = %d    notguncor = %d  notgunincor = %d\n", isguncor, isgunincor, notguncor, notgunincor);
+		//getchar();
+
+	end = time(NULL);
+	printf("%ti\n", end - start);
 	return 0;
+	
+exit_failure:
+	return -1;	
 }
