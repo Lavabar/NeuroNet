@@ -34,7 +34,7 @@ void nettofile(struct neuronet *net, char *path)
 
 int netfromfile(struct neuronet *net, char *path)
 {
-	int i, j;
+	int i;
 	FILE *f;
 
 	if ((f = fopen(path, "r")) == NULL) {

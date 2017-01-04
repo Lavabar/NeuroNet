@@ -1,9 +1,11 @@
-CC=gcc
+CC=clang
 NETSRCS=netcreat.c net_errno.c netpass.c netfile.c iplimage.c draw.c iplvideo.c neurowork.c #hough.c
 CFLAGS=-Wall -g `pkg-config --libs gtk+-3.0` -lm -lpng12 `pkg-config --cflags gtk+-3.0` 
 NETOBJS=$(NETSRCS:.c=.o)
 
 all: test_netcreat test_fpass test_netfile test_main guntrain notguntrain beta_main main test_net #test_hough bigmain
+train_minst: train_mnist.c
+	$(CC) $(CFLAGS) -o train_mnist train_mnist.c
 
 test_fpass: $(NETOBJS) test_fpass.o
 	$(CC) $(CFLAGS) -o test_fpass test_fpass.o $(NETOBJS)
