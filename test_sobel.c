@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <strings.h>
 #include "edge_detect.h"
-#include "ipltransform.h"
 #include "iplimage.h"
 #include "ipldefs.h"
 
