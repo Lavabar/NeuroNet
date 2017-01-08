@@ -69,6 +69,8 @@ int netfromfile(struct neuronet *net, char *path)
 		fscanf(f, "%lf\n", net->w++);
 	
 	net->w -= net->total_nw;
+	
+	net->g = (double *)malloc(sizeof(double) * net->total_nw);
 
 	fclose(f);
 

@@ -12,15 +12,16 @@
 #include "iplimage.h"
 #include "edge_detect.h"
 
-#define NEURO_PATH "/home/user/NeuroNet/neuro.data"
+#define NEURO_PATH "/home/user/NeuroNet1/neuro.data"
 #define SAMPLE_PATH "/home/user/Sources/train-images.idx3-ubyte"
 #define LABEL_PATH "/home/user/Sources/train-labels.idx1-ubyte"
-#define SAMPLE_CNT 60000	
+#define SAMPLE_CNT 2000	
 #define SAMPLE_WIDTH 28
 #define SAMPLE_HEIGHT 28
 #define SAMPLE_SIZE (SAMPLE_WIDTH * SAMPLE_HEIGHT)
 
-#define ETA 0.005
+#define SHUFFLE_TIME 1
+#define ETA 10.0
 
 struct sample {
 	double *data;
@@ -64,8 +65,8 @@ static void shufflearr(int *pathidx, int len)
 
 int main(int argc, char** argv)
 {
-	int nl = 5;
-	int nn[] = {400, 200, 100, 50, 10};
+	int nl = 2;
+	int nn[] = {1000, 10};
 	double *out;	
 	struct sample *examples;
 	int *idxes;	
@@ -138,15 +139,15 @@ int main(int argc, char** argv)
 	printf("nrows=%x nncols=%x\n", nrows, ncols);
 	printf("nrows=%d nncols=%d\n", nrows, ncols);
 
-	examples = (struct sample *)malloc(sizeof(struct sample) * nimgs);
-	idxes = (int *)malloc(sizeof(int) * nimgs);
+	examples = (struct sample *)malloc(sizeof(struct sample) * SAMPLE_CNT);
+	idxes = (int *)malloc(sizeof(int) * SAMPLE_CNT);
 
 	if (netfromfile(net, NEURO_PATH) == -1)
 		net = netcreat(nl, nn, nrows * ncols);
-
+	bzero(net->g, net->total_nw);
 
 	bzero(samples_got, sizeof(*samples_got) * 10);
-	for (i = 0; i < nimgs; i++) {
+	for (i = 0; i < SAMPLE_CNT; i++) {
 		unsigned char type;
 		unsigned char *data;
 	//	FILE *f_tmp;
@@ -182,7 +183,7 @@ int main(int argc, char** argv)
 	double error;
 	do { 
 		error = 0.0;
-		for (i = 0; i < nimgs; i++) {
+		for (i = 0; i < SAMPLE_CNT; i++) {
 			int idx;
 			idx = *(idxes + i);
 			out = netfpass(net, (examples + idx)->data);			
@@ -194,7 +195,8 @@ int main(int argc, char** argv)
 			out -= net->total_nn - 11;
 			free(out);
 		}
-		shufflearr(idxes, SAMPLE_CNT);
+		for (i = 0; i < SHUFFLE_TIME; i++)
+			shufflearr(idxes, SAMPLE_CNT);
 		printf("error = %lf\n", (error / SAMPLE_CNT / 10));
 		nettofile(net, NEURO_PATH);
 

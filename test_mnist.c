@@ -12,7 +12,7 @@
 #include "iplimage.h"
 #include "edge_detect.h"
 
-#define NEURO_PATH "/home/user/NeuroNet/neuro.data"
+#define NEURO_PATH "/home/user/NeuroNet1/neuro.data"
 #define SAMPLE_PATH "/home/user/Sources/t10k-images.idx3-ubyte"
 #define LABEL_PATH "/home/user/Sources/t10k-labels.idx1-ubyte"
 #define SAMPLE_CNT 10000	
@@ -64,8 +64,8 @@ static void shufflearr(int *pathidx, int len)
 
 int main(int argc, char** argv)
 {
-	int nl = 5;
-	int nn[] = {400, 200, 100, 50, 10};
+	int nl = 2;
+	int nn[] = {1000, 10};
 	double *out;	
 	struct sample *examples;
 	int *idxes;	
@@ -181,28 +181,30 @@ int main(int argc, char** argv)
 	
 	double error;
 	int u = 0;
-		error = 0.0;
-		for (i = 0; i < nimgs; i++) {
-			out = netfpass(net, (examples + i)->data);			
-			
-			out += net->total_nn - 11;
+	error = 0.0;
+	for (i = 0; i < nimgs; i++) {
+		out = netfpass(net, (examples + i)->data);			
 	
-			int idx, max;
-			max = 0;
-			idx = 0;
-			for (j = 0; j < net->nn[nl - 1]; j++)
-				if (out[j] > max) {
-					max = out[j];
-					idx = j;
-				}
-			if ((examples + i)->target[idx] == 1.0)
-				u++;
-				//error += fabs(out[j] - (examples + i)->target[j]);
-			out -= net->total_nn - 11;
-			free(out);
+		out += net->total_nn - 11;
+	
+		int idx, max;
+		max = 0;
+		idx = 0;
+		for (j = 0; j < net->nn[nl - 1]; j++) {
+			error += fabs(out[j] - (examples + i)->target[j]);
+			if (out[j] > max) {
+				max = out[j];
+				idx = j;
+			}
 		}
-		printf("%d is correct\n", u);
-		//printf("error = %lf\n", (error / SAMPLE_CNT / 10));
+		if ((examples + i)->target[idx] == 1.0)
+			u++;
+		
+		out -= net->total_nn - 11;
+		free(out);
+	}
+	printf("%d is correct\n", u);
+	printf("error = %lf\n", (error / SAMPLE_CNT / 10));
 		
 	return 0;
 

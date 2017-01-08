@@ -4,6 +4,7 @@
 struct neuronet {
     int nl, *nn, *nw, total_nn, total_nw;
     double *w;
+    double *g;
 };
 
 #endif // NET_STRUCTS_H

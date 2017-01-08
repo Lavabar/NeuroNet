@@ -22,26 +22,24 @@ int netfpass(struct neuronet *net, double *inp)
 		if (i == net->nl - 1) {
 			double *sum;
 			sum = (double *)malloc(sizeof(double) * net->nn[i]);
-			bzero(sum, net->nn[i]);
 			for (j = 0; j < net->nn[i]; j++)
-				for (k = 0; k < net->nw[i]; k++)
+				for (k = 0; k < net->nw[i])
 					sum[j] += *(w++) * inp[k];
-			for (j = 0; j < net->nn[i]; j++, out++) {
+			for (j = 0; j < net->nn[i]; j++, *out++) {
 				for(k = 0; k < net->nn[i]; k++) {
 					if (k == j) continue;		
 					*out += exp(sum[k]);
 				}
 				*out = (exp(sum[j]) / *out);
 			}
-			free(sum);
 		} else
-			for (j = 0; j < net->nn[i]; j++, out++) {
+			for (j = 0; j < net->nn[i]; j++) {
 				double sum = 0.0;
 				int nw = net->nw[i];
 				//printf("w = %lf\n", *w);
 				for (k = 0; k < nw; k++) 
 					sum += (*w++) * inp[k];
-				*out = (sum >= 0)? sum : 0;
+				*out++ = (sum >= 0)? sum : 0;
 			}
 		inp = out - net->nn[i];
 	}
@@ -81,7 +79,7 @@ int netbpass(struct neuronet *net, double *inp, double *out, double *target, dou
 			for (j = 0, m = 0; j < nn; j++)  
 				for (k = 0; k < nw; k++, m++)
 					*(w - m) += eta * *(errors - j) * *(out - k);
-		} /*else {
+		} else {
 			for (j = 0, m = 0; j < nn; j++)
 				for (k = 0; k < nw; k++, m++) 
 					*(w - m) += eta * *(errors - j) * *(inp - k);
@@ -105,7 +103,7 @@ int netbpass(struct neuronet *net, double *inp, double *out, double *target, dou
 			free(errors - ne + 1);
 			errors = newerrors;
 			ne = newne;
-		}*/
+		}
 
 	}
 	free(errors - ne + 1);

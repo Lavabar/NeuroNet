@@ -38,7 +38,7 @@ struct neuronet *netcreat(int nl, int *nn, int ninp)
 	}
     
 	res->nl = nl;
-    if ((res->nn = (int *)malloc(sizeof(int) * nl)) == NULL) {
+	if ((res->nn = (int *)malloc(sizeof(int) * nl)) == NULL) {
 		net_errno = NET_ENOMEM;
 		goto free_net;
 	}
@@ -47,11 +47,11 @@ struct neuronet *netcreat(int nl, int *nn, int ninp)
 		goto free_nn;
 	}
  
-    memcpy(res->nn, nn, sizeof(int) * nl);
-    res->nw[0] = ninp;
-    srand(time(NULL));
-    for (i = 1; i < nl; i++) 
-        res->nw[i] = res->nn[i - 1];
+	memcpy(res->nn, nn, sizeof(int) * nl);
+	res->nw[0] = ninp;
+	srand(time(NULL));
+    	for (i = 1; i < nl; i++) 
+		res->nw[i] = res->nn[i - 1];
 
 	res->total_nw = 0;
 	nperc = ninp;
@@ -59,22 +59,21 @@ struct neuronet *netcreat(int nl, int *nn, int ninp)
 		res->total_nw += nn[i] * nperc;
 		nperc = nn[i];
 	}
-
 	res->total_nn = 0;
 	for (i = 0; i < nl; i++)
 		res->total_nn += nn[i];	
-
+	
 	if((w = (double *)malloc(sizeof(double) * res->total_nw)) == NULL) {
 		net_errno = NET_ENOMEM;
 		goto free_nw;
 	}
-	
-    for (i = 0; i < res->total_nw; i++)
+	res->g = (double *)malloc(sizeof(double) * res->total_nw);
+	for (i = 0; i < res->total_nw; i++)
 		*w++ = (double)rand()/(double)RAND_MAX * 2.0 - 1.0;
 
 	res->w = w - res->total_nw;
-
-    return res;
+	
+	return res;
 
 free_nw:
 	free(res->nw);

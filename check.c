@@ -11,7 +11,7 @@
 #include "netfile.h"
 #include "edge_detect.h"
 
-#define NEURO_PATH "/home/user/NeuroNet/neuro.data"
+#define NEURO_PATH "/home/user/NeuroNet1/neuro.data"
 
 static double *getdata(struct IplImage *img)
 {
