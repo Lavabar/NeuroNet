@@ -12,7 +12,7 @@
 #include "iplimage.h"
 #include "edge_detect.h"
 
-#define NEURO_PATH "/home/user/NeuroNet1/neuro.data"
+#define NEURO_PATH "/home/user/NeuroNet/neuro.data"
 #define SAMPLE_PATH "/home/user/Sources/train-images.idx3-ubyte"
 #define LABEL_PATH "/home/user/Sources/train-labels.idx1-ubyte"
 #define SAMPLE_CNT 2000	

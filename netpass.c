@@ -41,7 +41,7 @@ int netfpass(struct neuronet *net, double *inp)
 				//printf("w = %lf\n", *w);
 				for (k = 0; k < nw; k++) 
 					sum += (*w++) * inp[k];
-				*out = (sum >= 0)? sum : 0;
+				*out = (sum >= 0)? ((sum / nw + 1.0) / 2.0) : 0;
 			}
 		inp = out - net->nn[i];
 	}
@@ -81,7 +81,7 @@ int netbpass(struct neuronet *net, double *inp, double *out, double *target, dou
 			for (j = 0, m = 0; j < nn; j++)  
 				for (k = 0; k < nw; k++, m++)
 					*(w - m) += eta * *(errors - j) * *(out - k);
-		} /*else {
+		} else {
 			for (j = 0, m = 0; j < nn; j++)
 				for (k = 0; k < nw; k++, m++) 
 					*(w - m) += eta * *(errors - j) * *(inp - k);
@@ -105,7 +105,7 @@ int netbpass(struct neuronet *net, double *inp, double *out, double *target, dou
 			free(errors - ne + 1);
 			errors = newerrors;
 			ne = newne;
-		}*/
+		}
 
 	}
 	free(errors - ne + 1);
